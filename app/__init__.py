@@ -5,16 +5,16 @@ from flask_mail import Mail
 import logging
 import os
 
-from .models import db, init_db_engine_with_context
+from .db import sqlAlchemy, init_db_engine_with_context
 
 cors = CORS()
 mail = Mail()
 
-def create_app(config_object_name='config_main'):
+
+def create_app(config_object_name="config"):
     """
     App factory: cria e configura a instância da aplicação Flask.
     """
-    from . import routes
 
     app = Flask(__name__, instance_relative_config=True)
 
@@ -24,9 +24,11 @@ def create_app(config_object_name='config_main'):
         try:
             os.makedirs(app.instance_path)
         except OSError:
-            logging.getLogger(__name__).error(f"Não foi possível criar a pasta instance em {app.instance_path}")
+            logging.getLogger(__name__).error(
+                f"Não foi possível criar a pasta instance em {app.instance_path}"
+            )
 
-    app.config.from_pyfile('config.py', silent=True)
+    app.config.from_pyfile("config.py", silent=True)
 
     if not app.debug and not app.testing:
         stream_handler = logging.StreamHandler()
@@ -34,22 +36,36 @@ def create_app(config_object_name='config_main'):
         app.logger.addHandler(stream_handler)
 
     app.logger.setLevel(logging.INFO)
-    app.logger.info('Aplicação Curvas Humildes a iniciar...')
+    app.logger.info("Aplicação Curvas Humildes a iniciar...")
 
     cors.init_app(app)
     mail.init_app(app)
-    db.init_app(app)
+    sqlAlchemy.init_app(app)
+
+    from .routes.main_routes import main_blueprint
+    from .routes.pages.pages_routes import pages_blueprint
+    from .routes.api.handlers_routes import handlers_blueprint
+    from .routes.api.admin.admin_routes import admin_blueprint
 
     with app.app_context():
-        from . import routes
-        app.register_blueprint(routes.main_bp)
+        app.register_blueprint(main_blueprint)
+        app.register_blueprint(pages_blueprint)
+        app.register_blueprint(handlers_blueprint)
+        app.register_blueprint(admin_blueprint)
 
         try:
-            app.logger.info("A inicializar o motor da base de dados e tabelas a partir de app factory...")
+            app.logger.info(
+                "A inicializar o motor da base de dados e tabelas a partir de app factory..."
+            )
             init_db_engine_with_context(app)
-            app.logger.info("Motor da base de dados e tabelas inicializados com sucesso.")
+            app.logger.info(
+                "Motor da base de dados e tabelas inicializados com sucesso."
+            )
         except Exception as e:
-            app.logger.error(f"Falha CRÍTICA ao inicializar a base de dados na app factory: {e}", exc_info=True)
+            app.logger.error(
+                f"Falha CRÍTICA ao inicializar a base de dados na app factory: {e}",
+                exc_info=True,
+            )
 
     app.logger.info("Aplicação criada e configurada com sucesso.")
     return app

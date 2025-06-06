@@ -78,3 +78,6 @@ build/
 *.tmp
 *.bak
 *.swp
+
+config.py
+benchmarks/*.txt
