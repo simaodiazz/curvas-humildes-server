@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Gestão de Reservas, Motoristas, Veículos, Tarifas e Vouchers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; padding: 1rem; box-sizing: border-box; }
+        .container { background-color: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); width: 100%; max-width: 1600px; margin: 1rem auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; table-layout: auto; }
+        th, td { border: 1px solid #e5e7eb; padding: 0.9rem; text-align: left; font-size: 0.875rem; vertical-align: middle; }
+        th { background-color: #f3f4f6; font-weight: 600; color: #374151; white-space: nowrap; }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        .btn { padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500; transition: background-color 0.2s ease-in-out; cursor: pointer; text-align: center; display: inline-block; margin-right: 0.25rem; margin-bottom: 0.25rem; }
+        .btn-danger { background-color: #ef4444; color: white; } .btn-danger:hover { background-color: #dc2626; }
+        .btn-primary { background-color: #4f46e5; color: white; } .btn-primary:hover { background-color: #4338ca; }
+        .btn-success { background-color: #10b981; color: white; } .btn-success:hover { background-color: #059669; }
+        .btn-warning { background-color: #f59e0b; color: white; } .btn-warning:hover { background-color: #d97706; }
+        .btn-info { background-color: #3b82f6; color: white; }
+        .btn-info:hover { background-color: #2563eb; }
+        .message-box { padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; margin-bottom: 1rem; text-align: center; font-size: 0.875rem; word-wrap: break-word; }
+        .message-success { background-color: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .message-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .loading-spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .no-data { text-align: center; padding: 2rem; color: #6b7280; }
+        .status-select, .driver-select, .vehicle-status-select, .form-select { padding: 0.3rem 0.6rem; border-radius: 0.375rem; border: 1px solid #d1d5db; background-color: white; font-size: 0.875rem; min-width: 150px; }
+        .status-select:focus, .driver-select:focus, .vehicle-status-select:focus, .form-select:focus { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25); outline: none; }
+        .form-input { border-radius: 0.5rem; border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; width: 100%; box-sizing: border-box; }
+        .form-input:focus { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25); outline: none; }
+        .form-label { display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem; }
+        .form-checkbox { width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; border-color: #d1d5db; color: #4f46e5; }
+        .form-checkbox:focus { ring: #4f46e5; }
+        .section-divider { border-top: 2px solid #e5e7eb; margin-top: 2rem; margin-bottom: 2rem; }
+        td.assigned-driver-cell { min-width: 200px; }
+        .form-group { margin-bottom: 1rem; }
+        .table-description { max-width: 200px; white-space: normal; word-break: break-word; }
+        .table-code { font-family: monospace; font-weight: bold; }
+        .price-breakdown span { display: block; font-size: 0.8em; color: #4b5563; } 
+        .price-breakdown strong.text-base { font-size: 1em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Gestão de Reservas</h1>
+            <button id="refreshBookingsBtn" class="btn btn-primary">Atualizar Lista</button>
+        </div>
+        <div id="adminBookingMessage" class="message-box" style="display: none;"></div>
+        <div id="loadingBookingsIndicator" class="loading-spinner" style="display: none;"></div>
+        <div class="overflow-x-auto">
+            <table id="bookingsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Passageiro</th>
+                        <th>Telefone</th> <th>Data</th>
+                        <th>Hora</th>
+                        <th>Duração (min)</th>
+                        <th>Partida</th>
+                        <th>Destino</th>
+                        <th>Pass.</th>
+                        <th>Malas</th>
+                        <th>Preço (€)</th> <th>Voucher</th>
+                        <th>Status</th>
+                        <th>Motorista Atribuído</th>
+                        <th>Criado Em</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="bookingsTableBody"></tbody>
+            </table>
+        </div>
+        <div id="noBookingsMessage" class="no-data" style="display: none;">Nenhuma reserva encontrada.</div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="container">
+        <div class="flex justify-between items-center mb-6">
+             <h1 class="text-2xl font-bold text-gray-800">Gestão de Motoristas</h1>
+             <button id="refreshDriversBtn" class="btn btn-primary">Atualizar Lista</button>
+        </div>
+         <div id="adminDriverMessage" class="message-box" style="display: none;"></div>
+        <form id="addDriverForm" class="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+             <h3 class="text-lg font-semibold text-gray-700">Adicionar Novo Motorista</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div><label for="newDriverFirstName" class="form-label">Nome Próprio:</label><input type="text" id="newDriverFirstName" name="first_name" class="form-input" required></div>
+                <div><label for="newDriverLastName" class="form-label">Apelido:</label><input type="text" id="newDriverLastName" name="last_name" class="form-input" required></div>
+                <div><label for="newDriverEmail" class="form-label">Email:</label><input type="email" id="newDriverEmail" name="email" class="form-input"></div>
+                <div><label for="newDriverPhone" class="form-label">Telefone:</label><input type="tel" id="newDriverPhone" name="phone_number" class="form-input" placeholder="+351 ..."></div>
+            </div>
+            <div class="flex items-center pt-2"><input type="checkbox" id="newDriverIsActive" name="is_active" class="form-checkbox" checked><label for="newDriverIsActive" class="text-sm text-gray-700 ml-2">Ativo</label></div>
+            <button type="submit" class="btn btn-success">Adicionar Motorista</button>
+        </form>
+        <div id="loadingDriversIndicator" class="loading-spinner" style="display: none;"></div>
+        <div class="overflow-x-auto">
+            <table id="driversTable">
+                <thead> <tr> <th>ID</th> <th>Nome Próprio</th> <th>Apelido</th> <th>Email</th> <th>Telefone</th> <th>Status</th> <th>Criado Em</th> <th>Ações</th> </tr> </thead>
+                <tbody id="driversTableBody"></tbody>
+            </table>
+        </div>
+        <div id="noDriversMessage" class="no-data" style="display: none;">Nenhum motorista encontrado.</div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="container">
+        <div class="flex justify-between items-center mb-6">
+             <h1 class="text-2xl font-bold text-gray-800">Gestão de Frota (Veículos)</h1>
+             <button id="refreshVehiclesBtn" class="btn btn-primary">Atualizar Lista</button>
+        </div>
+         <div id="adminVehicleMessage" class="message-box" style="display: none;"></div>
+        <form id="addVehicleForm" class="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+            <h3 class="text-lg font-semibold text-gray-700">Adicionar Novo Veículo</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div><label for="newVehicleLicensePlate" class="form-label">Matrícula:</label><input type="text" id="newVehicleLicensePlate" name="license_plate" class="form-input" required placeholder="XX-YY-ZZ"></div>
+                <div><label for="newVehicleMake" class="form-label">Marca:</label><input type="text" id="newVehicleMake" name="make" class="form-input" placeholder="Ex: Mercedes"></div>
+                <div><label for="newVehicleModel" class="form-label">Modelo:</label><input type="text" id="newVehicleModel" name="model" class="form-input" placeholder="Ex: Classe E"></div>
+                 <div><label for="newVehicleYear" class="form-label">Ano:</label><input type="number" id="newVehicleYear" name="year" class="form-input" min="1980" max="2099" placeholder="Ex: 2023"></div>
+                <div><label for="newVehicleCapacityPassengers" class="form-label">Capac. Passageiros:</label><input type="number" id="newVehicleCapacityPassengers" name="capacity_passengers" class="form-input" min="1" value="4" required></div>
+                 <div><label for="newVehicleCapacityBags" class="form-label">Capac. Malas:</label><input type="number" id="newVehicleCapacityBags" name="capacity_bags" class="form-input" min="0" value="3"></div>
+                 <div><label for="newVehicleStatus" class="form-label">Status:</label><select id="newVehicleStatus" name="status" class="form-select w-full"><option value="ACTIVE" selected>Ativo</option><option value="MAINTENANCE">Manutenção</option><option value="INACTIVE">Inativo</option></select></div>
+            </div>
+            <button type="submit" class="btn btn-success">Adicionar Veículo</button>
+        </form>
+        <div id="loadingVehiclesIndicator" class="loading-spinner" style="display: none;"></div>
+        <div class="overflow-x-auto">
+            <table id="vehiclesTable">
+                <thead> <tr> <th>ID</th> <th>Matrícula</th> <th>Marca</th> <th>Modelo</th> <th>Ano</th> <th>Cap. Pass.</th> <th>Cap. Malas</th> <th>Status</th> <th>Criado Em</th> <th>Ações</th> </tr> </thead>
+                <tbody id="vehiclesTableBody"></tbody>
+            </table>
+        </div>
+        <div id="noVehiclesMessage" class="no-data" style="display: none;">Nenhum veículo encontrado.</div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="container">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Gestão de Tarifas</h1>
+            <button id="refreshTariffsBtn" class="btn btn-primary">Recarregar Tarifas</button>
+        </div>
+        <div id="adminTariffMessage" class="message-box" style="display: none;"></div>
+        <div id="loadingTariffsIndicator" class="loading-spinner" style="display: none;"></div>
+        <form id="updateTariffForm" class="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-4">
+             <h3 class="text-lg font-semibold text-gray-700 mb-3">Configurações de Preço</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                <div class="form-group"><label for="base_rate_eur" class="form-label">Tarifa Base (€):</label><input type="number" id="base_rate_eur" name="base_rate_eur" class="form-input" step="0.01" min="0" required></div>
+                <div class="form-group"><label for="rate_per_km_eur" class="form-label">Tarifa por Km (€):</label><input type="number" id="rate_per_km_eur" name="rate_per_km_eur" class="form-input" step="0.01" min="0" required></div>
+                <div class="form-group"><label for="rate_per_passenger_eur" class="form-label">Tarifa por Passageiro Extra (€):</label><input type="number" id="rate_per_passenger_eur" name="rate_per_passenger_eur" class="form-input" step="0.01" min="0" required></div>
+                <div class="form-group"><label for="rate_per_bag_eur" class="form-label">Tarifa por Mala (€):</label><input type="number" id="rate_per_bag_eur" name="rate_per_bag_eur" class="form-input" step="0.01" min="0" required></div>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-3 pt-4 border-t border-gray-300">Sobretaxa Noturna</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                <div class="form-group flex items-center col-span-full md:col-span-1"><input type="checkbox" id="night_surcharge_applies" name="night_surcharge_applies" class="form-checkbox"><label for="night_surcharge_applies" class="form-label ml-2 mb-0">Aplicar Sobretaxa Noturna?</label></div>
+                <div class="form-group"><label for="night_surcharge_percentage" class="form-label">Percentagem da Sobretaxa (%):</label><input type="number" id="night_surcharge_percentage" name="night_surcharge_percentage" class="form-input" step="0.1" min="0" max="100"></div>
+                <div class="form-group"><label for="night_surcharge_start_hour" class="form-label">Hora de Início (0-23):</label><input type="number" id="night_surcharge_start_hour" name="night_surcharge_start_hour" class="form-input" min="0" max="23"></div>
+                <div class="form-group"><label for="night_surcharge_end_hour" class="form-label">Hora de Fim (0-23):</label><input type="number" id="night_surcharge_end_hour" name="night_surcharge_end_hour" class="form-input" min="0" max="23"></div>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-3 pt-4 border-t border-gray-300">Outras Configurações</h3>
+             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                <div class="form-group"><label for="booking_slot_overlap_minutes" class="form-label">Margem Sobreposição Reservas (min):</label><input type="number" id="booking_slot_overlap_minutes" name="booking_slot_overlap_minutes" class="form-input" min="0" required></div>
+            </div>
+            <div class="mt-6"><button type="submit" class="btn btn-success">Guardar Alterações nas Tarifas</button></div>
+            <p class="text-xs text-gray-500 mt-2">Última atualização: <span id="tariffsUpdatedAt">N/A</span></p>
+        </form>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="container">
+        <div class="flex justify-between items-center mb-6">
+             <h1 class="text-2xl font-bold text-gray-800">Gestão de Vouchers</h1>
+             <button id="refreshVouchersBtn" class="btn btn-primary">Atualizar Lista</button>
+        </div>
+         <div id="adminVoucherMessage" class="message-box" style="display: none;"></div>
+        <form id="addVoucherForm" class="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+            <h3 class="text-lg font-semibold text-gray-700">Adicionar Novo Voucher</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div><label for="newVoucherCode" class="form-label">Código:</label><input type="text" id="newVoucherCode" name="code" class="form-input uppercase" placeholder="Ex: VERAO20" required></div>
+                 <div><label for="newVoucherDescription" class="form-label">Descrição (Admin):</label><input type="text" id="newVoucherDescription" name="description" class="form-input" placeholder="Ex: Promoção de Verão"></div>
+                 <div><label for="newVoucherDiscountType" class="form-label">Tipo de Desconto:</label><select id="newVoucherDiscountType" name="discount_type" class="form-select w-full" required><option value="PERCENTAGE" selected>Percentagem (%)</option><option value="FIXED_AMOUNT">Valor Fixo (€)</option></select></div>
+                 <div><label for="newVoucherDiscountValue" class="form-label">Valor do Desconto:</label><input type="number" id="newVoucherDiscountValue" name="discount_value" class="form-input" step="0.01" min="0.01" required placeholder="Ex: 10 ou 5.50"></div>
+                <div><label for="newVoucherExpirationDate" class="form-label">Data de Validade (Opcional):</label><input type="date" id="newVoucherExpirationDate" name="expiration_date" class="form-input"></div>
+                <div><label for="newVoucherMaxUses" class="form-label">Máximo de Usos (0=ilimitado):</label><input type="number" id="newVoucherMaxUses" name="max_uses" class="form-input" min="0" value="1" required></div>
+                 <div><label for="newVoucherMinBookingValue" class="form-label">Valor Mínimo Reserva (€ Opcional):</label><input type="number" id="newVoucherMinBookingValue" name="min_booking_value" class="form-input" step="0.01" min="0" placeholder="Deixar vazio se não aplicável"></div>
+            </div>
+             <div class="flex items-center pt-2"><input type="checkbox" id="newVoucherIsActive" name="is_active" class="form-checkbox" checked><label for="newVoucherIsActive" class="text-sm text-gray-700 ml-2">Ativo</label></div>
+            <button type="submit" class="btn btn-success">Adicionar Voucher</button>
+        </form>
+        <div id="loadingVouchersIndicator" class="loading-spinner" style="display: none;"></div>
+        <div class="overflow-x-auto">
+            <table id="vouchersTable">
+                <thead> <tr> <th>ID</th><th>Código</th><th>Descrição</th><th>Tipo Desconto</th><th>Valor</th><th>Valor Mín. (€)</th><th>Validade</th><th>Usos (Atual/Máx)</th><th>Status</th><th>Criado Em</th><th>Ações</th> </tr> </thead>
+                <tbody id="vouchersTableBody"></tbody>
+            </table>
+        </div>
+        <div id="noVouchersMessage" class="no-data" style="display: none;">Nenhum voucher encontrado.</div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '';
+        const bookingsTableBody = document.getElementById('bookingsTableBody');
+        const adminBookingMessage = document.getElementById('adminBookingMessage');
+        const refreshBookingsBtn = document.getElementById('refreshBookingsBtn');
+        const loadingBookingsIndicator = document.getElementById('loadingBookingsIndicator');
+        const noBookingsMessage = document.getElementById('noBookingsMessage');
+
+        const driversTableBody = document.getElementById('driversTableBody');
+        const adminDriverMessage = document.getElementById('adminDriverMessage');
+        const refreshDriversBtn = document.getElementById('refreshDriversBtn');
+        const loadingDriversIndicator = document.getElementById('loadingDriversIndicator');
+        const noDriversMessage = document.getElementById('noDriversMessage');
+        const addDriverForm = document.getElementById('addDriverForm');
+
+        const vehiclesTableBody = document.getElementById('vehiclesTableBody');
+        const adminVehicleMessage = document.getElementById('adminVehicleMessage');
+        const refreshVehiclesBtn = document.getElementById('refreshVehiclesBtn');
+        const loadingVehiclesIndicator = document.getElementById('loadingVehiclesIndicator');
+        const noVehiclesMessage = document.getElementById('noVehiclesMessage');
+        const addVehicleForm = document.getElementById('addVehicleForm');
+
+        const adminTariffMessage = document.getElementById('adminTariffMessage');
+        const loadingTariffsIndicator = document.getElementById('loadingTariffsIndicator');
+        const updateTariffForm = document.getElementById('updateTariffForm');
+        const refreshTariffsBtn = document.getElementById('refreshTariffsBtn');
+        const tariffsUpdatedAt = document.getElementById('tariffsUpdatedAt');
+
+        const adminVoucherMessage = document.getElementById('adminVoucherMessage');
+        const loadingVouchersIndicator = document.getElementById('loadingVouchersIndicator');
+        const addVoucherForm = document.getElementById('addVoucherForm');
+        const vouchersTableBody = document.getElementById('vouchersTableBody');
+        const noVouchersMessage = document.getElementById('noVouchersMessage');
+        const refreshVouchersBtn = document.getElementById('refreshVouchersBtn');
+
+        const ALLOWED_BOOKING_STATUSES = [ 'PENDING_CONFIRMATION', 'CONFIRMED', 'DRIVER_ASSIGNED', 'ON_ROUTE_PICKUP', 'PASSENGER_ON_BOARD', 'COMPLETED', 'CANCELED_BY_CLIENT', 'CANCELED_BY_ADMIN', 'NO_SHOW'];
+        const ALLOWED_VEHICLE_STATUSES = ['ACTIVE', 'MAINTENANCE', 'INACTIVE'];
+        let activeDriversList = [];
+
+        function showAdminMessage(element, message, type = 'success') {
+             if (!element) { console.error("Elemento msg nulo:", message); return; }
+            element.textContent = message; element.className = `message-box message-${type}`; element.style.display = 'block';
+            setTimeout(() => { if (element) element.style.display = 'none'; }, 5000);
+        }
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A'; try { return new Date(dateString).toLocaleDateString('pt-PT'); } catch (e) { return 'Inválida'; }
+        }
+        function formatDateTime(dateString) {
+             if (!dateString) return 'N/A'; try { return new Date(dateString).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'}); } catch (e) { return 'Inválida'; }
+        }
+        function formatCurrency(value) {
+            if (value === null || value === undefined) return '-';
+            try { return value.toFixed(2); } catch(e) { return 'Inv.'; }
+        }
+
+        async function fetchAndDisplayBookings() {
+            loadingBookingsIndicator.style.display = 'block';
+            bookingsTableBody.innerHTML = '';
+            noBookingsMessage.style.display = 'none';
+            try {
+                if (activeDriversList.length === 0) { await fetchActiveDrivers(); }
+                const response = await fetch(`${API_BASE_URL}/admin/bookings`);
+                if (!response.ok) throw new Error(`Erro ${response.status} ao obter reservas`);
+                const bookings = await response.json();
+                if (bookings.length === 0) {
+                    noBookingsMessage.style.display = 'block';
+                } else {
+                    bookings.forEach(booking => {
+                        const row = bookingsTableBody.insertRow();
+                        row.insertCell().textContent = booking.id;
+                        row.insertCell().textContent = booking.passenger_name;
+                        row.insertCell().textContent = booking.passenger_phone || 'N/A';
+                        row.insertCell().textContent = formatDate(booking.date);
+                        row.insertCell().textContent = booking.time || 'N/A';
+                        row.insertCell().textContent = booking.duration_minutes !== null ? booking.duration_minutes : 'N/A';
+                        row.insertCell().textContent = booking.pickup_location;
+                        row.insertCell().textContent = booking.dropoff_location;
+                        row.insertCell().textContent = booking.passengers;
+                        row.insertCell().textContent = booking.bags;
+
+                        const priceCell = row.insertCell();
+                        priceCell.classList.add('price-breakdown');
+                        priceCell.innerHTML = `
+                            <strong class="text-base">${formatCurrency(booking.total_with_vat)}€</strong>
+                            ${booking.discount_amount ? `<span>Desc: -${formatCurrency(booking.discount_amount)}</span>` : ''}
+                            <span>IVA (${(booking.vat_percentage !== null ? booking.vat_percentage.toFixed(1) : 'N/A')}%): ${formatCurrency(booking.vat_amount)})</span>
+                        `;
+
+                        row.insertCell().textContent = booking.applied_voucher_code || '-';
+
+                        const statusCell = row.insertCell();
+                        const statusSelect = document.createElement('select');
+                        statusSelect.classList.add('status-select'); statusSelect.dataset.bookingId = booking.id; statusSelect.dataset.currentStatus = booking.status;
+                        ALLOWED_BOOKING_STATUSES.forEach(status => { const option = document.createElement('option'); option.value = status; option.textContent = status.replace(/_/g, ' '); if (status === booking.status) option.selected = true; statusSelect.appendChild(option); });
+                        statusSelect.addEventListener('change', handleStatusChange); statusCell.appendChild(statusSelect);
+
+                        const driverCell = row.insertCell(); driverCell.classList.add('assigned-driver-cell');
+                        const driverSelect = document.createElement('select'); driverSelect.classList.add('driver-select'); driverSelect.dataset.bookingId = booking.id; driverSelect.dataset.currentDriverId = booking.assigned_driver_id || "";
+                        const noDriverOption = document.createElement('option'); noDriverOption.value = ""; noDriverOption.textContent = "-- Nenhum --"; driverSelect.appendChild(noDriverOption);
+                        activeDriversList.forEach(driver => { const option = document.createElement('option'); option.value = driver.id; option.textContent = `${driver.first_name} ${driver.last_name}`; if (booking.assigned_driver_id === driver.id) option.selected = true; driverSelect.appendChild(option); });
+                        driverSelect.addEventListener('change', handleDriverAssign); driverCell.appendChild(driverSelect);
+
+                        row.insertCell().textContent = formatDateTime(booking.created_at);
+                        const actionsCell = row.insertCell();
+                        const deleteButton = document.createElement('button'); deleteButton.textContent = 'Excluir'; deleteButton.classList.add('btn', 'btn-danger'); deleteButton.onclick = () => handleDeleteBooking(booking.id); actionsCell.appendChild(deleteButton);
+                    });
+                }
+            } catch (error) { console.error('Erro obter reservas:', error); showAdminMessage(adminBookingMessage, `Erro obter reservas: ${error.message}`, 'error'); noBookingsMessage.style.display = 'block'; }
+            finally { loadingBookingsIndicator.style.display = 'none'; }
+        }
+        
+        async function handleStatusChange(event) {
+            const selectElement = event.target; const bookingId = selectElement.dataset.bookingId; const newStatus = selectElement.value; const previousStatus = selectElement.dataset.currentStatus;
+            if (!confirm(`Alterar status reserva ID ${bookingId} para "${newStatus.replace(/_/g, ' ')}"?`)) { selectElement.value = previousStatus; return; }
+            loadingBookingsIndicator.style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}/status`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status: newStatus }), });
+                const result = await response.json();
+                if (response.ok) { showAdminMessage(adminBookingMessage, `Status reserva ID ${bookingId} atualizado.`, 'success'); fetchAndDisplayBookings(); }
+                else { showAdminMessage(adminBookingMessage, `Erro atualizar status: ${result.error || response.statusText}.`, 'error'); selectElement.value = previousStatus; }
+            } catch (error) { console.error('Erro atualizar status:', error); showAdminMessage(adminBookingMessage, `Erro comunicação status: ${error.message}`, 'error'); selectElement.value = previousStatus; }
+            finally { loadingBookingsIndicator.style.display = 'none'; }
+         }
+        async function handleDeleteBooking(bookingId) {
+             if (!confirm(`Tem a certeza que deseja excluir a reserva ID ${bookingId}?`)) return;
+            loadingBookingsIndicator.style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}`, { method: 'DELETE' });
+                if (response.ok) { showAdminMessage(adminBookingMessage, `Reserva ID ${bookingId} excluída.`, 'success'); fetchAndDisplayBookings(); }
+                else { const result = await response.json().catch(() => ({error: 'Erro desconhecido'})); showAdminMessage(adminBookingMessage, `Erro excluir reserva: ${result.error}.`, 'error'); }
+            } catch (error) { console.error('Erro excluir reserva:', error); showAdminMessage(adminBookingMessage, `Erro comunicação exclusão: ${error.message}`, 'error'); }
+            finally { loadingBookingsIndicator.style.display = 'none'; }
+        }
+        async function handleDriverAssign(event) {
+            const selectElement = event.target; const bookingId = selectElement.dataset.bookingId; const driverId = selectElement.value ? parseInt(selectElement.value) : null; const driverName = selectElement.options[selectElement.selectedIndex].text; const previousDriverId = selectElement.dataset.currentDriverId || "";
+            const actionText = driverId ? `atribuir ${driverName}` : "remover atribuição";
+             if (!confirm(`Tem a certeza que deseja ${actionText} para reserva ID ${bookingId}?`)) { selectElement.value = previousDriverId; return; }
+             loadingBookingsIndicator.style.display = 'block';
+             try {
+                 const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}/assign`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ driver_id: driverId }) });
+                 const result = await response.json();
+                 if (response.ok) { showAdminMessage(adminBookingMessage, `Motorista ${actionText} com sucesso para reserva ID ${bookingId}.`, 'success'); fetchAndDisplayBookings(); }
+                 else { showAdminMessage(adminBookingMessage, `Erro atribuir motorista: ${result.error || response.statusText}.`, 'error'); selectElement.value = previousDriverId; }
+             } catch (error) { console.error('Erro atribuir motorista:', error); showAdminMessage(adminBookingMessage, `Erro comunicação atribuição: ${error.message}`, 'error'); selectElement.value = previousDriverId; }
+             finally { loadingBookingsIndicator.style.display = 'none'; }
+        }
+
+        async function fetchActiveDrivers() {
+            try { const response = await fetch(`${API_BASE_URL}/admin/drivers?active=true`); if (!response.ok) throw new Error(`Erro ${response.status}`); activeDriversList = await response.json(); }
+            catch (error) { console.error('Erro obter motoristas ativos:', error); showAdminMessage(adminDriverMessage, `Erro obter lista motoristas: ${error.message}`, 'error'); activeDriversList = []; }
+        }
+        async function fetchAndDisplayDrivers() {
+            loadingDriversIndicator.style.display = 'block'; driversTableBody.innerHTML = ''; noDriversMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/drivers`); if (!response.ok) throw new Error(`Erro ${response.status}`);
+                const drivers = await response.json();
+                if (drivers.length === 0) { noDriversMessage.style.display = 'block'; }
+                else {
+                    drivers.forEach(driver => {
+                        const row = driversTableBody.insertRow();
+                        row.insertCell().textContent = driver.id; row.insertCell().textContent = driver.first_name; row.insertCell().textContent = driver.last_name; row.insertCell().textContent = driver.email || 'N/A'; row.insertCell().textContent = driver.phone_number || 'N/A';
+                        const statusCell = row.insertCell(); statusCell.textContent = driver.is_active ? 'Ativo' : 'Inativo'; statusCell.classList.add(driver.is_active ? 'text-green-600' : 'text-red-600', 'font-medium');
+                        row.insertCell().textContent = formatDateTime(driver.created_at);
+                        const actionsCell = row.insertCell();
+                        const toggleActiveButton = document.createElement('button'); toggleActiveButton.textContent = driver.is_active ? 'Desativar' : 'Ativar'; toggleActiveButton.classList.add('btn', driver.is_active ? 'btn-warning' : 'btn-success'); toggleActiveButton.onclick = () => handleToggleDriverActive(driver.id, !driver.is_active); actionsCell.appendChild(toggleActiveButton);
+                        const deleteButton = document.createElement('button'); deleteButton.textContent = 'Excluir'; deleteButton.classList.add('btn', 'btn-danger'); deleteButton.onclick = () => handleDeleteDriver(driver.id); actionsCell.appendChild(deleteButton);
+                    });
+                }
+            } catch (error) { console.error('Erro obter motoristas:', error); showAdminMessage(adminDriverMessage, `Erro obter motoristas: ${error.message}`, 'error'); noDriversMessage.style.display = 'block'; }
+            finally { loadingDriversIndicator.style.display = 'none'; }
+        }
+        if (addDriverForm) { addDriverForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); loadingDriversIndicator.style.display = 'block'; adminDriverMessage.style.display = 'none';
+            const formData = new FormData(addDriverForm); const data = { first_name: formData.get('first_name'), last_name: formData.get('last_name'), email: formData.get('email') || null, phone_number: formData.get('phone_number') || null, is_active: document.getElementById('newDriverIsActive')?.checked };
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/drivers`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }); const result = await response.json();
+                if (response.ok) { showAdminMessage(adminDriverMessage, `Motorista "${result.first_name} ${result.last_name}" adicionado!`, 'success'); addDriverForm.reset(); await fetchAndDisplayDrivers(); await fetchActiveDrivers(); await fetchAndDisplayBookings();}
+                else { showAdminMessage(adminDriverMessage, `Erro ao adicionar: ${result.error || response.statusText}`, 'error'); }
+            } catch (error) { console.error('Erro fetch adicionar motorista:', error); showAdminMessage(adminDriverMessage, `Erro comunicação adicionar motorista: ${error.message}`, 'error'); }
+            finally { loadingDriversIndicator.style.display = 'none'; }
+        }); } else { console.error("Elemento addDriverForm não encontrado!"); }
+        
+        async function handleToggleDriverActive(driverId, newActiveState) {
+             const actionText = newActiveState ? 'ativar' : 'desativar'; if (!confirm(`Tem a certeza que deseja ${actionText} o motorista ID ${driverId}?`)) return;
+             loadingDriversIndicator.style.display = 'block';
+             try {
+                 const response = await fetch(`${API_BASE_URL}/admin/drivers/${driverId}`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_active: newActiveState }) }); const result = await response.json();
+                 if (response.ok) { showAdminMessage(adminDriverMessage, `Motorista ID ${driverId} ${actionText}do.`, 'success'); await fetchAndDisplayDrivers(); await fetchActiveDrivers(); await fetchAndDisplayBookings(); }
+                 else { showAdminMessage(adminDriverMessage, `Erro ao ${actionText}: ${result.error || response.statusText}`, 'error'); }
+             } catch (error) { console.error(`Erro ao ${actionText} motorista:`, error); showAdminMessage(adminDriverMessage, `Erro comunicação ${actionText}: ${error.message}`, 'error'); }
+             finally { loadingDriversIndicator.style.display = 'none'; }
+        }
+        async function handleDeleteDriver(driverId) {
+             if (!confirm(`Tem a certeza que deseja EXCLUIR PERMANENTEMENTE o motorista ID ${driverId}? Esta ação não pode ser desfeita.`)) return;
+            loadingDriversIndicator.style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/drivers/${driverId}`, { method: 'DELETE' });
+                if (response.ok) { showAdminMessage(adminDriverMessage, `Motorista ID ${driverId} excluído.`, 'success'); await fetchAndDisplayDrivers(); await fetchActiveDrivers(); await fetchAndDisplayBookings(); }
+                else { 
+                    const result = await response.json().catch(() => ({error: 'Erro desconhecido ao excluir.'})); 
+                    showAdminMessage(adminDriverMessage, `Erro excluir motorista: ${result.error}. Verifique se o motorista tem reservas associadas.`, 'error'); 
+                }
+            } catch (error) { console.error('Erro excluir motorista:', error); showAdminMessage(adminDriverMessage, `Erro comunicação exclusão: ${error.message}`, 'error'); }
+            finally { loadingDriversIndicator.style.display = 'none'; }
+        }
+
+        async function fetchAndDisplayVehicles() {
+            loadingVehiclesIndicator.style.display = 'block'; vehiclesTableBody.innerHTML = ''; noVehiclesMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vehicles`); if (!response.ok) throw new Error(`Erro ${response.status}`);
+                const vehicles = await response.json();
+                if (vehicles.length === 0) { noVehiclesMessage.style.display = 'block'; }
+                else {
+                    vehicles.forEach(vehicle => {
+                        const row = vehiclesTableBody.insertRow();
+                        row.insertCell().textContent = vehicle.id; row.insertCell().textContent = vehicle.license_plate; row.insertCell().textContent = vehicle.make || 'N/A'; row.insertCell().textContent = vehicle.model || 'N/A'; row.insertCell().textContent = vehicle.year || 'N/A';
+                        row.insertCell().textContent = vehicle.capacity_passengers; row.insertCell().textContent = vehicle.capacity_bags !== null ? vehicle.capacity_bags : 'N/A';
+                        const statusCell = row.insertCell(); statusCell.textContent = vehicle.status; statusCell.classList.add(vehicle.status === 'ACTIVE' ? 'text-green-600' : (vehicle.status === 'MAINTENANCE' ? 'text-yellow-600' : 'text-red-600'), 'font-medium');
+                        row.insertCell().textContent = formatDateTime(vehicle.created_at);
+                        const actionsCell = row.insertCell();
+                        // Botão Editar (Placeholder)
+                        const editButton = document.createElement('button'); editButton.textContent = 'Editar'; editButton.classList.add('btn', 'btn-info'); editButton.onclick = () => alert(`Funcionalidade de editar veículo ID ${vehicle.id} ainda não implementada.`); actionsCell.appendChild(editButton);
+                        const deleteButton = document.createElement('button'); deleteButton.textContent = 'Excluir'; deleteButton.classList.add('btn', 'btn-danger'); deleteButton.onclick = () => handleDeleteVehicle(vehicle.id); actionsCell.appendChild(deleteButton);
+                    });
+                }
+            } catch (error) { console.error('Erro obter veículos:', error); showAdminMessage(adminVehicleMessage, `Erro obter veículos: ${error.message}`, 'error'); noVehiclesMessage.style.display = 'block'; }
+            finally { loadingVehiclesIndicator.style.display = 'none'; }
+        }
+        if (addVehicleForm) { addVehicleForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); loadingVehiclesIndicator.style.display = 'block'; adminVehicleMessage.style.display = 'none';
+            const formData = new FormData(addVehicleForm); const data = { license_plate: formData.get('license_plate'), make: formData.get('make') || null, model: formData.get('model') || null, year: formData.get('year') ? parseInt(formData.get('year')) : null, capacity_passengers: parseInt(formData.get('capacity_passengers')), capacity_bags: formData.get('capacity_bags') ? parseInt(formData.get('capacity_bags')) : null, status: formData.get('status') };
+            if (!data.license_plate || isNaN(data.capacity_passengers) || data.capacity_passengers < 1) { showAdminMessage(adminVehicleMessage, 'Matrícula e Capacidade Passageiros (>0) obrigatórios.', 'error'); loadingVehiclesIndicator.style.display = 'none'; return; }
+            if (data.year !== null && (isNaN(data.year) || data.year < 1980 || data.year > 2099) ) { showAdminMessage(adminVehicleMessage, 'Ano inválido.', 'error'); loadingVehiclesIndicator.style.display = 'none'; return; }
+            if (data.capacity_bags !== null && (isNaN(data.capacity_bags) || data.capacity_bags <0)) { showAdminMessage(adminVehicleMessage, 'Capacidade Malas inválida.', 'error'); loadingVehiclesIndicator.style.display = 'none'; return; }
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vehicles`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }); const result = await response.json();
+                if (response.ok) { showAdminMessage(adminVehicleMessage, `Veículo "${result.license_plate}" adicionado!`, 'success'); addVehicleForm.reset(); fetchAndDisplayVehicles(); }
+                else { showAdminMessage(adminVehicleMessage, `Erro adicionar veículo: ${result.error || response.statusText}`, 'error'); }
+            } catch (error) { console.error('Erro fetch adicionar veículo:', error); showAdminMessage(adminVehicleMessage, `Erro comunicação adicionar veículo: ${error.message}`, 'error'); }
+            finally { loadingVehiclesIndicator.style.display = 'none'; }
+         }); } else { console.error("Elemento addVehicleForm não encontrado!"); }
+        async function handleDeleteVehicle(vehicleId) {
+             if (!confirm(`Tem a certeza que deseja EXCLUIR PERMANENTEMENTE o veículo ID ${vehicleId}? Esta ação não pode ser desfeita.`)) return;
+            loadingVehiclesIndicator.style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vehicles/${vehicleId}`, { method: 'DELETE' });
+                if (response.ok) { showAdminMessage(adminVehicleMessage, `Veículo ID ${vehicleId} excluído.`, 'success'); fetchAndDisplayVehicles(); }
+                else { const result = await response.json().catch(() => ({error: 'Erro desconhecido ao excluir.'})); showAdminMessage(adminVehicleMessage, `Erro excluir veículo: ${result.error}.`, 'error'); }
+            } catch (error) { console.error('Erro excluir veículo:', error); showAdminMessage(adminVehicleMessage, `Erro comunicação exclusão: ${error.message}`, 'error'); }
+            finally { loadingVehiclesIndicator.style.display = 'none'; }
+        }
+
+        async function fetchAndDisplayTariffs() {
+            loadingTariffsIndicator.style.display = 'block'; adminTariffMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/settings/tariffs`); if (!response.ok) { const d = await response.json().catch(()=>({error:`Erro ${response.status}`})); throw new Error(d.error); }
+                const t = await response.json();
+                document.getElementById('base_rate_eur').value = t.base_rate_eur?.toFixed(2) || '0.00'; document.getElementById('rate_per_km_eur').value = t.rate_per_km_eur?.toFixed(2) || '0.00'; document.getElementById('rate_per_passenger_eur').value = t.rate_per_passenger_eur?.toFixed(2) || '0.00'; document.getElementById('rate_per_bag_eur').value = t.rate_per_bag_eur?.toFixed(2) || '0.00'; document.getElementById('night_surcharge_applies').checked = t.night_surcharge_applies || false; document.getElementById('night_surcharge_percentage').value = t.night_surcharge_percentage?.toFixed(1) || '0.0'; document.getElementById('night_surcharge_start_hour').value = t.night_surcharge_start_hour ?? '22'; document.getElementById('night_surcharge_end_hour').value = t.night_surcharge_end_hour ?? '6'; document.getElementById('booking_slot_overlap_minutes').value = t.booking_slot_overlap_minutes ?? '30';
+                tariffsUpdatedAt.textContent = t.updated_at ? formatDateTime(t.updated_at) : 'N/A';
+            } catch (error) { console.error('Erro obter tarifas:', error); showAdminMessage(adminTariffMessage, `Erro carregar tarifas: ${error.message}`, 'error'); }
+            finally { loadingTariffsIndicator.style.display = 'none'; }
+        }
+        if (updateTariffForm) { updateTariffForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); loadingTariffsIndicator.style.display = 'block'; adminTariffMessage.style.display = 'none';
+            const data = { base_rate_eur: parseFloat(document.getElementById('base_rate_eur').value), rate_per_km_eur: parseFloat(document.getElementById('rate_per_km_eur').value), rate_per_passenger_eur: parseFloat(document.getElementById('rate_per_passenger_eur').value), rate_per_bag_eur: parseFloat(document.getElementById('rate_per_bag_eur').value), night_surcharge_applies: document.getElementById('night_surcharge_applies').checked, night_surcharge_percentage: parseFloat(document.getElementById('night_surcharge_percentage').value), night_surcharge_start_hour: parseInt(document.getElementById('night_surcharge_start_hour').value), night_surcharge_end_hour: parseInt(document.getElementById('night_surcharge_end_hour').value), booking_slot_overlap_minutes: parseInt(document.getElementById('booking_slot_overlap_minutes').value) };
+            if (Object.values(data).some(v => v === null || (typeof v === 'number' && isNaN(v)))) { showAdminMessage(adminTariffMessage, 'Verifique campos numéricos.', 'error'); loadingTariffsIndicator.style.display = 'none'; return; }
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/settings/tariffs`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const result = await response.json();
+                if (response.ok) { showAdminMessage(adminTariffMessage, 'Tarifas atualizadas!', 'success'); tariffsUpdatedAt.textContent = result.updated_at ? formatDateTime(result.updated_at) : 'N/A'; }
+                else { showAdminMessage(adminTariffMessage, `Erro atualizar tarifas: ${result.error || response.statusText}`, 'error'); }
+            } catch (error) { console.error('Erro atualizar tarifas:', error); showAdminMessage(adminTariffMessage, `Erro comunicação tarifas: ${error.message}`, 'error'); }
+            finally { loadingTariffsIndicator.style.display = 'none'; }
+        }); } else { console.error("Elemento updateTariffForm não encontrado!"); }
+
+        async function fetchAndDisplayVouchers() {
+            loadingVouchersIndicator.style.display = 'block'; vouchersTableBody.innerHTML = ''; noVouchersMessage.style.display = 'none'; adminVoucherMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vouchers`); if (!response.ok) { const d=await response.json().catch(()=>({error:`Erro ${response.status}`})); throw new Error(d.error); }
+                const vouchers = await response.json();
+                if (vouchers.length === 0) { noVouchersMessage.style.display = 'block'; }
+                else {
+                    vouchers.forEach(voucher => {
+                        const row = vouchersTableBody.insertRow();
+                        row.insertCell().textContent = voucher.id; row.insertCell().innerHTML = `<span class="table-code">${voucher.code}</span>`; row.insertCell().innerHTML = `<span class="table-description">${voucher.description || '-'}</span>`; row.insertCell().textContent = voucher.discount_type === 'PERCENTAGE' ? '%' : 'Fixo'; row.insertCell().textContent = voucher.discount_type === 'PERCENTAGE' ? `${voucher.discount_value}%` : `${formatCurrency(voucher.discount_value)} €`; row.insertCell().textContent = formatCurrency(voucher.min_booking_value); row.insertCell().textContent = formatDate(voucher.expiration_date); row.insertCell().textContent = `${voucher.current_uses}/${voucher.max_uses === 0 ? '∞' : voucher.max_uses}`;
+                        const statusCell = row.insertCell(); statusCell.textContent = voucher.is_active ? 'Ativo' : 'Inativo'; statusCell.classList.add(voucher.is_active ? 'text-green-600' : 'text-red-600', 'font-medium');
+                        row.insertCell().textContent = formatDateTime(voucher.created_at);
+                        const actionsCell = row.insertCell();
+                        const toggleActiveButton = document.createElement('button'); toggleActiveButton.textContent = voucher.is_active ? 'Desativar' : 'Ativar'; toggleActiveButton.classList.add('btn', voucher.is_active ? 'btn-warning' : 'btn-success'); toggleActiveButton.onclick = () => handleToggleVoucherActive(voucher.id, !voucher.is_active); actionsCell.appendChild(toggleActiveButton);
+                        const deleteButton = document.createElement('button'); deleteButton.textContent = 'Excluir'; deleteButton.classList.add('btn', 'btn-danger'); deleteButton.onclick = () => handleDeleteVoucher(voucher.id); actionsCell.appendChild(deleteButton);
+                    });
+                }
+            } catch (error) { console.error('Erro obter vouchers:', error); showAdminMessage(adminVoucherMessage, `Erro carregar vouchers: ${error.message}`, 'error'); noVouchersMessage.style.display = 'block'; }
+            finally { loadingVouchersIndicator.style.display = 'none'; }
+         }
+        if (addVoucherForm) { addVoucherForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); loadingVouchersIndicator.style.display = 'block'; adminVoucherMessage.style.display = 'none';
+            const formData = new FormData(addVoucherForm); const data = { code: formData.get('code'), description: formData.get('description') || null, discount_type: formData.get('discount_type'), discount_value: parseFloat(formData.get('discount_value')), expiration_date: formData.get('expiration_date') || null, max_uses: parseInt(formData.get('max_uses')), min_booking_value: formData.get('min_booking_value') ? parseFloat(formData.get('min_booking_value')) : null, is_active: document.getElementById('newVoucherIsActive')?.checked };
+            if (!data.code || !data.discount_type || isNaN(data.discount_value) || data.discount_value <= 0 || isNaN(data.max_uses) || data.max_uses < 0) { showAdminMessage(adminVoucherMessage, 'Preencha Código, Tipo, Valor (>0) e Máx. Usos (>=0).', 'error'); loadingVouchersIndicator.style.display = 'none'; return; }
+            if (data.discount_type === 'PERCENTAGE' && data.discount_value > 100) { showAdminMessage(adminVoucherMessage, 'Desconto % <= 100.', 'error'); loadingVouchersIndicator.style.display = 'none'; return; }
+            if (data.min_booking_value !== null && (isNaN(data.min_booking_value) || data.min_booking_value < 0)) { showAdminMessage(adminVoucherMessage, 'Valor mínimo da reserva inválido.', 'error'); loadingVouchersIndicator.style.display = 'none'; return; }
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vouchers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const result = await response.json();
+                if (response.ok) { showAdminMessage(adminVoucherMessage, `Voucher "${result.code}" adicionado!`, 'success'); addVoucherForm.reset(); fetchAndDisplayVouchers(); }
+                else { showAdminMessage(adminVoucherMessage, `Erro adicionar voucher: ${result.error || response.statusText}`, 'error'); }
+            } catch (error) { console.error('Erro adicionar voucher:', error); showAdminMessage(adminVoucherMessage, `Erro comunicação voucher: ${error.message}`, 'error'); }
+            finally { loadingVouchersIndicator.style.display = 'none'; }
+        }); } else { console.error("Elemento addVoucherForm não encontrado!"); }
+        
+        async function handleToggleVoucherActive(voucherId, newActiveState) {
+             const actionText = newActiveState ? 'ativar' : 'desativar'; if (!confirm(`Tem a certeza que deseja ${actionText} o voucher ID ${voucherId}?`)) return;
+             loadingVouchersIndicator.style.display = 'block'; adminVoucherMessage.style.display = 'none';
+             try {
+                 const response = await fetch(`${API_BASE_URL}/admin/vouchers/${voucherId}`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_active: newActiveState }) }); const result = await response.json();
+                 if (response.ok) { showAdminMessage(adminVoucherMessage, `Voucher ID ${voucherId} ${actionText}do.`, 'success'); fetchAndDisplayVouchers(); }
+                 else { showAdminMessage(adminVoucherMessage, `Erro ao ${actionText}: ${result.error || response.statusText}`, 'error'); }
+             } catch (error) { console.error(`Erro ao ${actionText} voucher:`, error); showAdminMessage(adminVoucherMessage, `Erro comunicação ${actionText}: ${error.message}`, 'error'); }
+             finally { loadingVouchersIndicator.style.display = 'none'; }
+        }
+        async function handleDeleteVoucher(voucherId) {
+             if (!confirm(`Tem a certeza que deseja EXCLUIR PERMANENTEMENTE o voucher ID ${voucherId}?`)) return;
+            loadingVouchersIndicator.style.display = 'block'; adminVoucherMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vouchers/${voucherId}`, { method: 'DELETE' });
+                if (response.ok) { showAdminMessage(adminVoucherMessage, `Voucher ID ${voucherId} excluído.`, 'success'); fetchAndDisplayVouchers(); }
+                else { const result = await response.json().catch(() => ({error: 'Erro desconhecido'})); showAdminMessage(adminVoucherMessage, `Erro excluir voucher: ${result.error}.`, 'error'); }
+            } catch (error) { console.error('Erro excluir voucher:', error); showAdminMessage(adminVoucherMessage, `Erro comunicação exclusão: ${error.message}`, 'error'); }
+            finally { loadingVouchersIndicator.style.display = 'none'; }
+        }
+
+        refreshBookingsBtn.addEventListener('click', fetchAndDisplayBookings);
+        refreshDriversBtn.addEventListener('click', fetchAndDisplayDrivers);
+        refreshVehiclesBtn.addEventListener('click', fetchAndDisplayVehicles);
+        refreshTariffsBtn.addEventListener('click', fetchAndDisplayTariffs);
+        refreshVouchersBtn.addEventListener('click', fetchAndDisplayVouchers);
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log("DOM Carregado. Adicionando event listeners e carregando dados...");
+            loadingBookingsIndicator.style.display = 'block';
+            loadingDriversIndicator.style.display = 'block';
+            loadingVehiclesIndicator.style.display = 'block';
+            loadingTariffsIndicator.style.display = 'block';
+            loadingVouchersIndicator.style.display = 'block';
+            try {
+                await fetchActiveDrivers();
+                await Promise.all([
+                     fetchAndDisplayDrivers(),
+                     fetchAndDisplayVehicles(),
+                     fetchAndDisplayBookings(),
+                     fetchAndDisplayTariffs(),
+                     fetchAndDisplayVouchers()
+                ]);
+                 console.log("Carregamento inicial concluído.");
+            } catch (error) {
+                 console.error("Erro durante o carregamento inicial:", error);
+                 showAdminMessage(adminBookingMessage, `Erro fatal no carregamento inicial: ${error.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
