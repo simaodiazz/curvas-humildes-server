@@ -1,6 +1,8 @@
-from app.db import sqlAlchemy
-from sqlalchemy import Column, Integer, DateTime
 import datetime
+
+from sqlalchemy import Column, DateTime, Integer
+
+from app.db import sqlAlchemy
 
 
 class Entity(sqlAlchemy.Model):

@@ -4,4 +4,4 @@
 pip install -r requirements.txt
 
 # Run code formatter
-python -m black .
+python -m ruff format .

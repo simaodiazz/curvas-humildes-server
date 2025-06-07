@@ -1,5 +1,6 @@
-from flask import render_template, Blueprint
 from logging import getLogger
+
+from flask import Blueprint, render_template
 
 pages_blueprint = Blueprint(
     name="pages",

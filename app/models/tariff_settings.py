@@ -1,16 +1,14 @@
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Float,
-    Date,
-    Time,
-    DateTime,
-    Boolean,
-    ForeignKey,
-)
-from .entity import Entity
 import datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+)
+
+from .entity import Entity
 
 
 class TariffSettings(Entity):

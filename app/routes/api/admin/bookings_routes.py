@@ -1,8 +1,8 @@
 from flask import jsonify, request
-from .admin_routes import logger, admin_blueprint
-from ....models.booking import Booking
 
+from ....models.booking import Booking
 from ....services import bookings_service
+from .admin_routes import admin_blueprint, logger
 
 
 def _serialize_booking_details(booking: Booking):

@@ -1,8 +1,8 @@
 from flask import jsonify, request
-from .admin_routes import admin_blueprint, logger
-from ....models.vehicle import Vehicle
 
+from ....models.vehicle import Vehicle
 from ....services import drivers_service
+from .admin_routes import admin_blueprint, logger
 
 
 def _serialize_vehicle_details(vehicle: Vehicle):

@@ -1,15 +1,17 @@
-from ..models.tariff_settings import TariffSettings
-from flask import current_app
-from ..db import sqlAlchemy
-from logging import getLogger
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+"""Serviço para configuração de tarifas."""
 
 import datetime
+from logging import getLogger
+from flask import current_app
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from ..db import sqlAlchemy
+from ..models.tariff_settings import TariffSettings
 
 logger = getLogger(__name__)
 
 
 def get_active_tariff_settings() -> TariffSettings:
+    """Obtém ou cria as configurações de tarifa ativas (id=1)."""
     try:
         settings = (
             sqlAlchemy.session.query(TariffSettings)
@@ -52,7 +54,8 @@ def get_active_tariff_settings() -> TariffSettings:
             except IntegrityError as ie:
                 sqlAlchemy.session.rollback()
                 logger.warning(
-                    f"Erro integridade criar tarifa padrão (provavelmente já existe): {ie}. Obtendo novamente."
+                    "Erro integridade criar tarifa padrão (provavelmente já existe): %s. Obtendo novamente.",
+                    ie,
                 )
                 settings = (
                     sqlAlchemy.session.query(TariffSettings)
@@ -61,23 +64,25 @@ def get_active_tariff_settings() -> TariffSettings:
                 )
                 if settings:
                     return settings
-                else:
-                    logger.error("Falha obter tarifa mesmo após erro integridade.")
-                    raise ValueError("Não foi possível carregar/criar config. tarifa.")
+                logger.error("Falha ao obter tarifa mesmo após erro integridade.")
+                raise ValueError(
+                    "Não foi possível carregar/criar config. tarifa."
+                ) from ie
             except SQLAlchemyError as e_inner:
                 sqlAlchemy.session.rollback()
-                logger.error(f"Erro BD criar tarifa padrão: {e_inner}", exc_info=True)
-                raise ValueError("Erro BD criar config. tarifa.")
+                logger.error("Erro BD criar tarifa padrão: %s", e_inner, exc_info=True)
+                raise ValueError("Erro BD criar config. tarifa.") from e_inner
         return settings
     except SQLAlchemyError as e_outer:
-        logger.error(f"Erro BD geral obter tarifa: {e_outer}", exc_info=True)
-        raise ValueError("Erro BD carregar config. tarifa.")
+        logger.error("Erro BD geral obter tarifa: %s", e_outer, exc_info=True)
+        raise ValueError("Erro BD carregar config. tarifa.") from e_outer
     except Exception as e_fatal:
-        logger.error(f"Erro inesperado fatal obter tarifa: {e_fatal}", exc_info=True)
-        raise ValueError("Erro inesperado carregar config. tarifa.")
+        logger.error("Erro inesperado fatal obter tarifa: %s", e_fatal, exc_info=True)
+        raise ValueError("Erro inesperado carregar config. tarifa.") from e_fatal
 
 
 def update_tariff_settings(settings_data: dict) -> TariffSettings:
+    """Atualiza os valores das configurações de tarifa."""
     try:
         settings_to_update = (
             sqlAlchemy.session.query(TariffSettings)
@@ -88,9 +93,7 @@ def update_tariff_settings(settings_data: dict) -> TariffSettings:
             raise ValueError(
                 "Config. tarifa base (id=1) não encontrada para atualização."
             )
-
-        logger.info(f"Atualizando config. tarifa. Dados recebidos: {settings_data}")
-
+        logger.info("Atualizando config. tarifa. Dados recebidos: %s", settings_data)
         field_map = {
             "base_rate_eur": (float, "base_rate_eur"),
             "rate_per_km_eur": (float, "rate_per_km_eur"),
@@ -102,12 +105,11 @@ def update_tariff_settings(settings_data: dict) -> TariffSettings:
             "night_surcharge_end_hour": (int, "night_surcharge_end_hour"),
             "booking_slot_overlap_minutes": (int, "booking_slot_overlap_minutes"),
         }
-
         updated_fields = False
         for key, (value_type, model_attr) in field_map.items():
             if key in settings_data:
+                raw_value = settings_data[key]
                 try:
-                    raw_value = settings_data[key]
                     if value_type == bool:
                         converted_value = str(raw_value).lower() in [
                             "true",
@@ -117,44 +119,52 @@ def update_tariff_settings(settings_data: dict) -> TariffSettings:
                         ]
                     else:
                         converted_value = value_type(raw_value)
-
-                    if model_attr in [
-                        "night_surcharge_start_hour",
-                        "night_surcharge_end_hour",
-                    ] and not (0 <= converted_value <= 23):
+                    if (
+                        model_attr
+                        in [
+                            "night_surcharge_start_hour",
+                            "night_surcharge_end_hour",
+                        ]
+                        and not 0 <= converted_value <= 23
+                    ):
                         raise ValueError(f"{key} deve estar entre 0 e 23.")
-                    if model_attr == "night_surcharge_percentage" and not (
-                        0 <= converted_value <= 100
+                    if (
+                        model_attr == "night_surcharge_percentage"
+                        and not 0 <= converted_value <= 100
                     ):
                         raise ValueError(f"{key} deve estar entre 0 e 100.")
-
                     setattr(settings_to_update, model_attr, converted_value)
                     updated_fields = True
                 except (ValueError, TypeError) as e_conv:
                     logger.warning(
-                        f"Erro ao converter o valor para '{key}': {raw_value} -> {value_type}. Erro: {e_conv}"
+                        "Erro ao converter o valor para '%s': %s -> %s. Erro: %s",
+                        key,
+                        raw_value,
+                        value_type,
+                        e_conv,
                     )
-                    raise ValueError(f"Valor inválido para '{key}': {raw_value}.")
-
+                    raise ValueError(
+                        f"Valor inválido para '{key}': {raw_value}."
+                    ) from e_conv
         if updated_fields:
             settings_to_update.updated_at = datetime.datetime.utcnow()
             sqlAlchemy.session.commit()
             sqlAlchemy.session.refresh(settings_to_update)
-            logger.info(f"Config. tarifa atualizada: {settings_to_update}")
+            logger.info("Config. tarifa atualizada: %s", settings_to_update)
         else:
             logger.info("Nenhum campo de tarifa foi atualizado.")
-
         return settings_to_update
-
     except ValueError as ve:
         sqlAlchemy.session.rollback()
-        logger.warning(f"Erro de valor ao atualizar tarifas: {ve}")
+        logger.warning("Erro de valor ao atualizar tarifas: %s", ve)
         raise
     except SQLAlchemyError as e:
         sqlAlchemy.session.rollback()
-        logger.error(f"Erro de BD ao atualizar tarifas: {e}", exc_info=True)
-        raise ValueError("Erro de BD ao atualizar configurações de tarifa.")
+        logger.error("Erro de BD ao atualizar tarifas: %s", e, exc_info=True)
+        raise ValueError("Erro de BD ao atualizar configurações de tarifa.") from e
     except Exception as e_unexp:
         sqlAlchemy.session.rollback()
-        logger.error(f"Erro inesperado ao atualizar tarifas: {e_unexp}", exc_info=True)
-        raise ValueError("Erro inesperado ao atualizar configurações de tarifa.")
+        logger.error("Erro inesperado ao atualizar tarifas: %s", e_unexp, exc_info=True)
+        raise ValueError(
+            "Erro inesperado ao atualizar configurações de tarifa."
+        ) from e_unexp

@@ -1,5 +1,6 @@
-from flask import current_app, jsonify, request, Blueprint
 from logging import getLogger
+
+from flask import Blueprint
 
 admin_blueprint = Blueprint(
     name="admin",

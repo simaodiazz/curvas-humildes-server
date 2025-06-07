@@ -1,8 +1,8 @@
-from flask import request, jsonify
-from .admin_routes import admin_blueprint, logger
-from ....models.tariff_settings import TariffSettings
+from flask import jsonify, request
 
+from ....models.tariff_settings import TariffSettings
 from ....services import tariff_settings_service
+from .admin_routes import admin_blueprint, logger
 
 
 @admin_blueprint.route("/admin/settings/tariffs", methods=["GET"])

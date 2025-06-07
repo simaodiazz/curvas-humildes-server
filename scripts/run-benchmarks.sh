@@ -4,10 +4,6 @@
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # Install Apache Bench
     brew install apache-bench
-# Check for Linux (Debian-based)
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # Install Apache Bench
-    sudo apt install -y apache2-utils
 # Check for Linux (RHEL-based)
 elif [[ "$OSTYPE" == "rhel"* ]]; then
     # Install Apache Bench

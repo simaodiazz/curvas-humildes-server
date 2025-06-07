@@ -1,6 +1,8 @@
 import logging
+
 from flask import current_app
 from flask_mail import Message
+
 from ..models.booking import Booking
 from ..models.driver import Driver
 
@@ -22,8 +24,8 @@ def send_new_booking_notification_email(mail_instance, booking: Booking):
         <ul>
             <li>ID da Reserva: {booking.id}</li>
             <li>Passageiro: {booking.passenger_name}</li>
-            <li>Telefone: {booking.passenger_phone or 'N/A'}</li>
-            <li>Data e Hora: {booking.date.strftime('%d/%m/%Y')} às {booking.time.strftime('%H:%M')}</li>
+            <li>Telefone: {booking.passenger_phone or "N/A"}</li>
+            <li>Data e Hora: {booking.date.strftime("%d/%m/%Y")} às {booking.time.strftime("%H:%M")}</li>
             <li>Duração Estimada: {booking.duration_minutes} minutos</li>
             <li>Local de Partida: {booking.pickup_location}</li>
             <li>Local de Destino: {booking.dropoff_location}</li>
@@ -35,8 +37,8 @@ def send_new_booking_notification_email(mail_instance, booking: Booking):
             {"<li>Subtotal (s/IVA, após desconto): " + str(round(booking.final_budget_pre_vat, 2)) + " EUR</li>" if booking.final_budget_pre_vat is not None else ""}
             {"<li>IVA ({:.1f}%): ".format(booking.vat_percentage if booking.vat_percentage is not None else 0) + str(round(booking.vat_amount, 2)) + " EUR</li>" if booking.vat_amount is not None else ""}
             <li><strong>Total a Pagar (c/IVA): {booking.total_with_vat:.2f} EUR</strong></li>
-            <li>Instruções Especiais: {booking.instructions or 'Nenhuma'}</li>
-            <li>Status Atual: {booking.status.replace('_', ' ').title()}</li>
+            <li>Instruções Especiais: {booking.instructions or "Nenhuma"}</li>
+            <li>Status Atual: {booking.status.replace("_", " ").title()}</li>
         </ul>
         <p>Por favor, aceda ao painel de administração para gerir esta reserva.</p>
         """
@@ -66,15 +68,15 @@ def send_driver_assignment_email(mail_instance, driver: Driver, booking: Booking
         <p>Foi-lhe atribuído um novo serviço. Detalhes:</p>
         <ul>
             <li>ID da Reserva: {booking.id}</li>
-            <li>Data e Hora: {booking.date.strftime('%d/%m/%Y')} às {booking.time.strftime('%H:%M')}</li>
+            <li>Data e Hora: {booking.date.strftime("%d/%m/%Y")} às {booking.time.strftime("%H:%M")}</li>
             <li>Passageiro: {booking.passenger_name}</li>
-            <li>Telefone do Passageiro: {booking.passenger_phone or 'N/A'}</li>
+            <li>Telefone do Passageiro: {booking.passenger_phone or "N/A"}</li>
             <li>Local de Partida: {booking.pickup_location}</li>
             <li>Local de Destino: {booking.dropoff_location}</li>
             <li>Nº Passageiros / Malas: {booking.passengers} / {booking.bags}</li>
             <li>Duração Estimada: {booking.duration_minutes} minutos</li>
             <li><strong>Valor Total do Cliente (c/IVA): {booking.total_with_vat:.2f} EUR</strong></li>
-            <li>Instruções Especiais: {booking.instructions or 'Nenhuma'}</li>
+            <li>Instruções Especiais: {booking.instructions or "Nenhuma"}</li>
         </ul>
         <p>Obrigado,<br>A Gerência - Curvas Humildes</p>
         """

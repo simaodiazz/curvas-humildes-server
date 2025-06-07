@@ -10,7 +10,7 @@ SECRET_KEY = os.environ.get(
     "uma_chave_secreta_default_para_desenvolvimento_muito_longa_e_aleatoria",
 )
 
-SQLALCHEMY_DATABASE_URI = f"sqlite:///data.db"
+SQLALCHEMY_DATABASE_URI = "sqlite:///data.db"
 
 # --- API de Mapas ---
 MAPS_API_PROVIDER = "OPENROUTESERVICE"

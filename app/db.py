@@ -1,7 +1,6 @@
+from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
-from flask import current_app
-
 
 sqlAlchemy = SQLAlchemy()
 
@@ -10,10 +9,6 @@ def init_db_engine_with_context(app_instance):
     """
     Inicializa a base de dados e cria tabelas se não existirem.
     """
-    from .models.voucher import Voucher
-    from .models.booking import Booking
-    from .models.driver import Driver
-    from .models.vehicle import Vehicle
     from .models.tariff_settings import TariffSettings
 
     try:

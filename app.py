@@ -1,5 +1,6 @@
-from app import create_app
 import logging
+
+from app import create_app
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

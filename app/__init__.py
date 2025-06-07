@@ -1,11 +1,12 @@
 # CurvasSistema/app/__init__.py
-from flask import Flask
-from flask_cors import CORS
-from flask_mail import Mail
 import logging
 import os
 
-from .db import sqlAlchemy, init_db_engine_with_context
+from flask import Flask
+from flask_cors import CORS
+from flask_mail import Mail
+
+from .db import init_db_engine_with_context, sqlAlchemy
 
 cors = CORS()
 mail = Mail()
@@ -42,10 +43,10 @@ def create_app(config_object_name="config"):
     mail.init_app(app)
     sqlAlchemy.init_app(app)
 
+    from .routes.api.admin.admin_routes import admin_blueprint
+    from .routes.api.handlers_routes import handlers_blueprint
     from .routes.main_routes import main_blueprint
     from .routes.pages.pages_routes import pages_blueprint
-    from .routes.api.handlers_routes import handlers_blueprint
-    from .routes.api.admin.admin_routes import admin_blueprint
 
     with app.app_context():
         app.register_blueprint(main_blueprint)

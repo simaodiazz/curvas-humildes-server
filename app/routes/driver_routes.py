@@ -1,6 +1,8 @@
-from flask import current_app, send_from_directory, jsonify, Blueprint
 from os import path
-from .main_routes import main_blueprint, logger
+
+from flask import current_app, jsonify, send_from_directory
+
+from .main_routes import logger, main_blueprint
 
 
 @main_blueprint.route("/driver-app/")

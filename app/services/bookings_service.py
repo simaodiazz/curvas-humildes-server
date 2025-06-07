@@ -1,25 +1,24 @@
-import datetime
+"""Serviço de reservas (booking) - funções para criar, alterar, consultar e excluir reservas.
 
+Inclui regras de negócio para disponibilidade de motoristas, aplicação de vouchers, orçamento,
+atribuição de motorista e envio de e-mail.
+"""
+import datetime
+from logging import getLogger
 from flask import current_app
 from sqlalchemy.exc import SQLAlchemyError
-
+from sqlalchemy.orm import joinedload
 from ..db import sqlAlchemy
 from ..models.booking import Booking
-from ..models.driver import Driver
-from ..models.tariff_settings import TariffSettings
-
-from .tariff_settings_service import get_active_tariff_settings
-from .drivers_service import get_all_drivers, get_driver_by_id
 from .budget_service import calculate_estimated_budget
+from .drivers_service import get_all_drivers, get_driver_by_id
+from .emails_service import send_driver_assignment_email
+from .tariff_settings_service import get_active_tariff_settings
 from .vouchers_service import (
-    validate_voucher_for_use,
     apply_voucher_to_budget,
     record_voucher_usage,
+    validate_voucher_for_use,
 )
-from .emails_service import send_driver_assignment_email
-
-from logging import getLogger
-from sqlalchemy.orm import joinedload
 
 logger = getLogger(__name__)
 
@@ -29,13 +28,13 @@ def check_availability(
     booking_time_obj: datetime.time,
     booking_duration_minutes: int,
 ) -> bool:
+    """Verifica disponibilidade de motoristas ativos para o horário solicitado de reserva."""
     try:
         tariff_settings = get_active_tariff_settings()
         if not tariff_settings:
             raise ValueError(
                 "Configurações de tarifa indisponíveis para verificar disponibilidade."
             )
-
         active_drivers = get_all_drivers(only_active=True)
         num_active_drivers = len(active_drivers)
         if num_active_drivers == 0:
@@ -48,7 +47,6 @@ def check_availability(
         slot_overlap_delta = datetime.timedelta(
             minutes=tariff_settings.booking_slot_overlap_minutes
         )
-
         new_slot_start = new_booking_start_dt - slot_overlap_delta
         new_slot_end = (
             new_booking_start_dt
@@ -63,54 +61,53 @@ def check_availability(
             "ON_ROUTE_PICKUP",
             "PASSENGER_ON_BOARD",
         }
-        existing_bookings_on_date = (
+        existing_bookings = (
             sqlAlchemy.session.query(Booking)
             .filter(Booking.date == booking_date_obj)
             .filter(Booking.status.in_(relevant_statuses))
             .all()
         )
-
         conflicting_bookings_count = 0
-        for existing_booking in existing_bookings_on_date:
+        for existing_booking in existing_bookings:
             if existing_booking.duration_minutes is None:
                 logger.warning(
-                    f"Reserva existente ID {existing_booking.id} sem duração, ignorando para disponibilidade."
+                    "Reserva existente ID %s sem duração, ignorando para disponibilidade.",
+                    existing_booking.id,
                 )
                 continue
-
             existing_booking_start_dt = datetime.datetime.combine(
                 existing_booking.date, existing_booking.time
             )
             actual_existing_end = existing_booking_start_dt + datetime.timedelta(
                 minutes=existing_booking.duration_minutes
             )
-
             overlap = (new_slot_start < actual_existing_end) and (
                 new_slot_end > existing_booking_start_dt
             )
-
             if overlap:
                 conflicting_bookings_count += 1
-
         logger.info(
-            f"Disponibilidade: {conflicting_bookings_count} conflitos vs {num_active_drivers} motoristas ativos."
+            "Disponibilidade: %d conflitos vs %d motoristas ativos.",
+            conflicting_bookings_count,
+            num_active_drivers,
         )
         return conflicting_bookings_count < num_active_drivers
 
     except SQLAlchemyError as e:
-        logger.error(f"Erro de BD ao verificar disponibilidade: {e}", exc_info=True)
-        raise ValueError("Erro de base de dados ao verificar disponibilidade.")
+        logger.error("Erro de BD ao verificar disponibilidade: %s", e, exc_info=True)
+        raise ValueError("Erro de base de dados ao verificar disponibilidade.") from e
     except ValueError as ve:
-        logger.error(f"Erro de valor ao verificar disponibilidade: {ve}")
+        logger.error("Erro de valor ao verificar disponibilidade: %s", ve)
         raise
     except Exception as e_unexp:
         logger.error(
-            f"Erro inesperado ao verificar disponibilidade: {e_unexp}", exc_info=True
+            "Erro inesperado ao verificar disponibilidade: %s", e_unexp, exc_info=True
         )
-        raise ValueError("Erro inesperado ao verificar disponibilidade.")
+        raise ValueError("Erro inesperado ao verificar disponibilidade.") from e_unexp
 
 
 def create_booking_record(booking_data: dict) -> Booking:
+    """Processa dados e cria registro de reserva no banco de dados."""
     try:
         passenger_name = booking_data["passengerName"]
         passenger_phone = booking_data.get("passengerPhone")
@@ -126,6 +123,7 @@ def create_booking_record(booking_data: dict) -> Booking:
 
         if not passenger_name.strip():
             raise ValueError("Nome do passageiro é obrigatório.")
+
         try:
             date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
             time_obj = datetime.datetime.strptime(time_str, "%H:%M").time()
@@ -135,7 +133,7 @@ def create_booking_record(booking_data: dict) -> Booking:
         except (TypeError, ValueError) as e_conv:
             raise ValueError(
                 f"Dados de reserva inválidos (data, hora, passageiros, malas ou duração): {e_conv}"
-            )
+            ) from e_conv
 
         if duration_minutes <= 0:
             raise ValueError("Duração da reserva deve ser positiva.")
@@ -154,11 +152,11 @@ def create_booking_record(booking_data: dict) -> Booking:
             budget_calc_data, request_time_obj=time_obj
         )
         original_budget_pre_vat_calc = base_budget_details["original_budget_pre_vat"]
-
         final_budget_pre_vat_calc = original_budget_pre_vat_calc
         discount_amount_calc = 0.0
         applied_voucher_code_final = None
         validated_voucher_obj = None
+
         if voucher_code_from_frontend and voucher_code_from_frontend.strip():
             try:
                 validated_voucher_obj = validate_voucher_for_use(
@@ -172,11 +170,14 @@ def create_booking_record(booking_data: dict) -> Booking:
                 )
                 applied_voucher_code_final = validated_voucher_obj.code
                 logger.info(
-                    f"Voucher '{applied_voucher_code_final}' validado e aplicado no backend para a reserva."
+                    "Voucher '%s' validado e aplicado no backend para a reserva.",
+                    applied_voucher_code_final,
                 )
             except ValueError as ve_voucher:
                 logger.warning(
-                    f"Voucher '{voucher_code_from_frontend}' falhou validação no backend durante criação de reserva: {ve_voucher}. Ignorando voucher."
+                    "Voucher '%s' falhou validação no backend durante criação de reserva: %s. Ignorando voucher.",
+                    voucher_code_from_frontend,
+                    ve_voucher,
                 )
 
         vat_percentage_calc = current_app.config.get("VAT_RATE", 23.0)
@@ -205,6 +206,7 @@ def create_booking_record(booking_data: dict) -> Booking:
             applied_voucher_code=applied_voucher_code_final,
             status="PENDING_CONFIRMATION",
         )
+
         sqlAlchemy.session.add(new_booking)
         sqlAlchemy.session.commit()
 
@@ -213,29 +215,32 @@ def create_booking_record(booking_data: dict) -> Booking:
 
         sqlAlchemy.session.refresh(new_booking)
         logger.info(
-            f"Reserva criada na BD com ID: {new_booking.id}, Total c/IVA: {new_booking.total_with_vat}, Voucher: {new_booking.applied_voucher_code}"
+            "Reserva criada na BD com ID: %s, Total c/IVA: %s, Voucher: %s",
+            new_booking.id,
+            new_booking.total_with_vat,
+            new_booking.applied_voucher_code,
         )
         return new_booking
-
     except ValueError as ve:
         sqlAlchemy.session.rollback()
-        logger.error(f"Erro de valor ao criar reserva: {ve}")
+        logger.error("Erro de valor ao criar reserva: %s", ve)
         raise
     except KeyError as ke:
         sqlAlchemy.session.rollback()
-        logger.error(f"Erro de dados em falta ao criar reserva: {ke}")
-        raise ValueError(f"Dados de reserva incompletos: falta o campo {ke}.")
+        logger.error("Erro de dados em falta ao criar reserva: %s", ke)
+        raise ValueError(f"Dados de reserva incompletos: falta o campo {ke}.") from ke
     except SQLAlchemyError as e:
         sqlAlchemy.session.rollback()
-        logger.error(f"Erro de BD ao criar reserva: {e}", exc_info=True)
-        raise ValueError("Erro de base de dados ao criar a reserva.")
+        logger.error("Erro de BD ao criar reserva: %s", e, exc_info=True)
+        raise ValueError("Erro de base de dados ao criar a reserva.") from e
     except Exception as e_unexp:
         sqlAlchemy.session.rollback()
-        logger.error(f"Erro inesperado ao criar reserva: {e_unexp}", exc_info=True)
-        raise ValueError("Erro interno inesperado ao criar a reserva.")
+        logger.error("Erro inesperado ao criar reserva: %s", e_unexp, exc_info=True)
+        raise ValueError("Erro interno inesperado ao criar a reserva.") from e_unexp
 
 
-def update_booking_status(booking_id: int, new_status: str) -> Booking | None:
+def update_booking_status(booking_id: int, new_status: str) -> "Booking | None":
+    """Atualiza status de uma reserva pelo ID."""
     allowed_statuses = current_app.config.get("ALLOWED_BOOKING_STATUSES", [])
     if new_status not in allowed_statuses:
         raise ValueError(
@@ -254,26 +259,32 @@ def update_booking_status(booking_id: int, new_status: str) -> Booking | None:
     except SQLAlchemyError as e:
         sqlAlchemy.session.rollback()
         logger.error(
-            f"Erro de BD ao atualizar status da reserva {booking_id}: {e}",
+            "Erro de BD ao atualizar status da reserva %s: %s",
+            booking_id,
+            e,
             exc_info=True,
         )
-        raise ValueError("Erro de BD ao atualizar status da reserva.")
+        raise ValueError("Erro de BD ao atualizar status da reserva.") from e
     except Exception as e_unexp:
         sqlAlchemy.session.rollback()
         logger.error(
-            f"Erro inesperado ao atualizar status da reserva {booking_id}: {e_unexp}",
+            "Erro inesperado ao atualizar status da reserva %s: %s",
+            booking_id,
+            e_unexp,
             exc_info=True,
         )
-        raise ValueError("Erro inesperado ao atualizar status da reserva.")
+        raise ValueError("Erro inesperado ao atualizar status da reserva.") from e_unexp
 
 
-def assign_driver_to_booking(booking_id: int, driver_id: int | None) -> Booking | None:
+def assign_driver_to_booking(
+    booking_id: int, driver_id: "int | None"
+) -> "Booking | None":
+    """Atribui ou remove um motorista à reserva pelo ID. Envia e-mail se necessário."""
     mail_instance = current_app.extensions.get("mail")
     if not mail_instance:
         logger.error(
             "Instância Flask-Mail não encontrada em current_app.extensions. Emails não serão enviados."
         )
-
     try:
         booking_to_update = (
             sqlAlchemy.session.query(Booking)
@@ -283,7 +294,6 @@ def assign_driver_to_booking(booking_id: int, driver_id: int | None) -> Booking 
         )
         if not booking_to_update:
             return None
-
         driver_to_assign = None
         if driver_id is not None:
             driver_to_assign = get_driver_by_id(driver_id)
@@ -293,7 +303,6 @@ def assign_driver_to_booking(booking_id: int, driver_id: int | None) -> Booking 
                 raise ValueError(
                     f"Motorista ID {driver_id} está inativo e não pode ser atribuído."
                 )
-
         previous_driver_id = booking_to_update.assigned_driver_id
         booking_to_update.assigned_driver_id = driver_id
 
@@ -301,7 +310,6 @@ def assign_driver_to_booking(booking_id: int, driver_id: int | None) -> Booking 
             booking_to_update.status = "DRIVER_ASSIGNED"
         elif driver_id is None and booking_to_update.status == "DRIVER_ASSIGNED":
             booking_to_update.status = "CONFIRMED"
-
         sqlAlchemy.session.commit()
         sqlAlchemy.session.refresh(booking_to_update)
 
@@ -318,30 +326,37 @@ def assign_driver_to_booking(booking_id: int, driver_id: int | None) -> Booking 
                 )
             except Exception as email_error:
                 logger.error(
-                    f"Erro ao enviar email de atribuição para motorista ID {driver_id} (reserva {booking_id}): {email_error}",
+                    "Erro ao enviar email de atribuição para motorista ID %s (reserva %s): %s",
+                    driver_id,
+                    booking_id,
+                    email_error,
                     exc_info=True,
                 )
-
         return booking_to_update
     except ValueError as ve:
         raise ve
     except SQLAlchemyError as e:
         sqlAlchemy.session.rollback()
         logger.error(
-            f"Erro de BD ao atribuir motorista à reserva {booking_id}: {e}",
+            "Erro de BD ao atribuir motorista à reserva %s: %s",
+            booking_id,
+            e,
             exc_info=True,
         )
-        raise ValueError("Erro de base de dados ao atribuir motorista.")
+        raise ValueError("Erro de base de dados ao atribuir motorista.") from e
     except Exception as e_unexp:
         sqlAlchemy.session.rollback()
         logger.error(
-            f"Erro inesperado ao atribuir motorista à reserva {booking_id}: {e_unexp}",
+            "Erro inesperado ao atribuir motorista à reserva %s: %s",
+            booking_id,
+            e_unexp,
             exc_info=True,
         )
-        raise ValueError("Erro inesperado ao atribuir motorista.")
+        raise ValueError("Erro inesperado ao atribuir motorista.") from e_unexp
 
 
-def get_all_bookings() -> list[Booking]:
+def get_all_bookings() -> list:
+    """Obtém todas as reservas ordenadas por data/hora (desc)."""
     try:
         return (
             sqlAlchemy.session.query(Booking)
@@ -350,16 +365,17 @@ def get_all_bookings() -> list[Booking]:
             .all()
         )
     except SQLAlchemyError as e:
-        logger.error(f"Erro de BD ao obter todas as reservas: {e}", exc_info=True)
-        raise ValueError("Erro de BD ao obter todas as reservas.")
+        logger.error("Erro de BD ao obter todas as reservas: %s", e, exc_info=True)
+        raise ValueError("Erro de BD ao obter todas as reservas.") from e
     except Exception as e_unexp:
         logger.error(
-            f"Erro inesperado ao obter todas as reservas: {e_unexp}", exc_info=True
+            "Erro inesperado ao obter todas as reservas: %s", e_unexp, exc_info=True
         )
-        raise ValueError("Erro inesperado ao obter todas as reservas.")
+        raise ValueError("Erro inesperado ao obter todas as reservas.") from e_unexp
 
 
 def delete_booking_by_id(booking_id: int) -> bool:
+    """Exclui a reserva pelo ID."""
     try:
         booking_to_delete = (
             sqlAlchemy.session.query(Booking).filter(Booking.id == booking_id).first()
@@ -371,11 +387,16 @@ def delete_booking_by_id(booking_id: int) -> bool:
         return False
     except SQLAlchemyError as e:
         sqlAlchemy.session.rollback()
-        logger.error(f"Erro de BD ao excluir reserva {booking_id}: {e}", exc_info=True)
-        raise ValueError("Erro de BD ao excluir reserva.")
+        logger.error(
+            "Erro de BD ao excluir reserva %s: %s", booking_id, e, exc_info=True
+        )
+        raise ValueError("Erro de BD ao excluir reserva.") from e
     except Exception as e_unexp:
         sqlAlchemy.session.rollback()
         logger.error(
-            f"Erro inesperado ao excluir reserva {booking_id}: {e_unexp}", exc_info=True
+            "Erro inesperado ao excluir reserva %s: %s",
+            booking_id,
+            e_unexp,
+            exc_info=True,
         )
-        raise ValueError("Erro inesperado ao excluir reserva.")
+        raise ValueError("Erro inesperado ao excluir reserva.") from e_unexp

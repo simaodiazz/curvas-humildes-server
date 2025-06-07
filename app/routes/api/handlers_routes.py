@@ -1,13 +1,11 @@
-from flask import current_app, jsonify, request, Blueprint
-from app.routes.main_routes import main_blueprint, logger
-from app.routes.main_routes import main_blueprint
 import datetime
-
 from logging import getLogger
 
-from ...services import budget_service
-from ...services import vouchers_service
-from ...services import bookings_service
+from flask import Blueprint, current_app, jsonify, request
+
+from app.routes.main_routes import logger
+
+from ...services import bookings_service, budget_service, vouchers_service
 
 handlers_blueprint = Blueprint(
     name="handlers",

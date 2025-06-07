@@ -1,17 +1,13 @@
+import datetime
+
 from sqlalchemy import (
     Column,
+    DateTime,
     Integer,
     String,
-    Float,
-    Date,
-    Time,
-    DateTime,
-    Boolean,
-    ForeignKey,
 )
-from sqlalchemy.orm import relationship
+
 from .entity import Entity
-import datetime
 
 
 class Vehicle(Entity):
