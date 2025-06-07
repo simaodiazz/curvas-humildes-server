@@ -10,8 +10,8 @@ __pycache__/
 
 *.sqlite3
 *.db
-tvde_bookings.db
-instance/tvde_bookings.db 
+data.db
+instance/data.db 
 
 instance/
 
