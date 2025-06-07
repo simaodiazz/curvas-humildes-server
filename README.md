@@ -26,8 +26,12 @@ Foi um grande passo, é quase o mundo ideal que geralmente fica entre 7.50 e 9.0
 
 ### Gunicorn (20 workers)
 
-Total de requests: 50.000
-Concorrência: 200
-Requests por segundo: ~8.500
-Tempo médio de resposta: 23 ms
-Falhas: 0
+* Total de requests: 50.000
+* Concorrência: 200
+* Requests por segundo: ~8.500
+* Tempo médio de resposta: 23 ms
+* Falhas: 0
+
+Melhoria em porcentagem de **1089%**
+
+A melhoria foi considerável, mas ainda pode melhorar.
