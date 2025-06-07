@@ -18,3 +18,5 @@ flask_sqlalchemy==3.1.1
 flask_caching==2.3.1
 pylint==3.3.7 # For code linting
 ruff==0.0.291 # For code formatting
+gunicorn==23.0.0
+uwsgi==2.0.30
