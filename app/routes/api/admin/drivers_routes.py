@@ -3,6 +3,7 @@ from flask import jsonify, request
 from ....models.driver import Driver
 from ....services import drivers_service
 from .admin_routes import admin_blueprint, logger
+from ....cache import flaskCaching
 
 
 def _serialize_driver_details(driver: Driver):
@@ -27,6 +28,7 @@ def admin_create_driver_ep():
         return jsonify({"error": "Nome/Apelido obrigatórios."}), 400
     try:
         new_driver = drivers_service.create_driver(data)
+        flaskCaching.delete_memoized(admin_get_all_drivers_ep)
         return jsonify(_serialize_driver_details(new_driver)), 201
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
@@ -36,6 +38,7 @@ def admin_create_driver_ep():
 
 
 @admin_blueprint.route("/admin/drivers", methods=["GET"])
+@flaskCaching.memoize(timeout=60)
 def admin_get_all_drivers_ep():
     only_active_param = request.args.get("active", default=None, type=str)
     only_active = (
@@ -50,6 +53,7 @@ def admin_get_all_drivers_ep():
 
 
 @admin_blueprint.route("/admin/drivers/<int:driver_id>", methods=["GET"])
+@flaskCaching.memoize(timeout=60)
 def admin_get_driver_ep(driver_id):
     try:
         driver = drivers_service.get_driver_by_id(driver_id)
@@ -73,6 +77,8 @@ def admin_update_driver_ep(driver_id):
     try:
         updated_driver = drivers_service.update_driver(driver_id, data)
         if updated_driver:
+            flaskCaching.delete_memoized(admin_get_all_drivers_ep)
+            flaskCaching.delete_memoized(admin_get_driver_ep, driver_id)
             return jsonify(_serialize_driver_details(updated_driver)), 200
         else:
             return jsonify({"error": f"Motorista ID {driver_id} não encontrado."}), 404
@@ -88,6 +94,8 @@ def admin_delete_driver_ep(driver_id):
     try:
         success = drivers_service.delete_driver_by_id(driver_id)
         if success:
+            flaskCaching.delete_memoized(admin_get_all_drivers_ep)
+            flaskCaching.delete_memoized(admin_get_driver_ep, driver_id)
             return "", 204
         else:
             return jsonify({"error": f"Motorista ID {driver_id} não encontrado."}), 404

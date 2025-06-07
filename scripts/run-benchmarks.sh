@@ -2,15 +2,15 @@
 
 # Check for macOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    # Install Apache Bench
+    # Install Apache Benchmark
     brew install apache-bench
 # Check for Linux (RHEL-based)
 elif [[ "$OSTYPE" == "rhel"* ]]; then
-    # Install Apache Bench
+    # Install Apache Benchmark
     sudo dnf install -y httpd-tools
 fi
 
-# all benchmarks gonna be executed by ab
+# all benchmarks gonna be executed by Apache Benchmark
 benchmarks=(
     "10,1"
     "100,2"

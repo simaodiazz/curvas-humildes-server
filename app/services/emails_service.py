@@ -1,15 +1,25 @@
 import logging
-
 from flask import current_app
 from flask_mail import Message
-
 from ..models.booking import Booking
 from ..models.driver import Driver
+from ..cache import flaskCaching
 
 logger = logging.getLogger(__name__)
 
+_BOOKING_NOTIFY_CACHE_TIMEOUT = 300  # 5 min
+_BOOKING_ASSIGNMENT_CACHE_TIMEOUT = 300
+
 
 def send_new_booking_notification_email(mail_instance, booking: Booking):
+    # Evita envio duplicado de notificação admin (caso chamada mais de 1x)
+    cache_key = f"booking_notify_sent:{booking.id}"
+    if flaskCaching.get(cache_key):
+        logger.info(
+            f"Email de notificação admin para reserva {booking.id} já enviado recentemente, ignorando."
+        )
+        return
+
     admin_recipients = current_app.config.get("ADMIN_EMAIL_RECIPIENTS")
     if not admin_recipients:
         logger.warning(
@@ -47,6 +57,8 @@ def send_new_booking_notification_email(mail_instance, booking: Booking):
         logger.info(
             f"Email de notificação para admin enviado para {', '.join(admin_recipients)} para a reserva ID {booking.id}"
         )
+        # Marca como enviado no cache por 5 min
+        flaskCaching.set(cache_key, True, timeout=_BOOKING_NOTIFY_CACHE_TIMEOUT)
     except Exception as e:
         logger.error(
             f"Falha ao enviar email de notificação para admin (reserva ID {booking.id}): {e}",
@@ -55,6 +67,14 @@ def send_new_booking_notification_email(mail_instance, booking: Booking):
 
 
 def send_driver_assignment_email(mail_instance, driver: Driver, booking: Booking):
+    # Evita enviar mais de uma vez para o mesmo motorista para a mesma reserva em 5min
+    cache_key = f"booking_driver_assignment_sent:{booking.id}:{driver.id}"
+    if flaskCaching.get(cache_key):
+        logger.info(
+            f"Email de atribuição para motorista {driver.id} (reserva {booking.id}) já enviado recentemente, ignorando."
+        )
+        return
+
     if not driver or not driver.email:
         logger.warning(
             f"Motorista ID {driver.id if driver else 'N/A'} sem email. Email de atribuição para reserva {booking.id} não enviado."
@@ -85,6 +105,8 @@ def send_driver_assignment_email(mail_instance, driver: Driver, booking: Booking
         logger.info(
             f"Email de atribuição de serviço enviado para {driver.email} (Motorista ID {driver.id}) para a reserva ID {booking.id}"
         )
+        # Marca como enviado no cache por 5 min
+        flaskCaching.set(cache_key, True, timeout=_BOOKING_ASSIGNMENT_CACHE_TIMEOUT)
     except Exception as e:
         logger.error(
             f"Falha ao enviar email de atribuição para motorista ID {driver.id} (reserva {booking.id}): {e}",

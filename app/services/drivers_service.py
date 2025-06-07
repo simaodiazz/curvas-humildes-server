@@ -1,13 +1,34 @@
-"""Serviço para operações de motoristas e veículos."""
-
+"""Serviço para operações de motoristas e veículos, com Flask-Caching."""
 import datetime
 from logging import getLogger
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from ..db import sqlAlchemy
 from ..models.driver import Driver
 from ..models.vehicle import Vehicle
+from ..cache import flaskCaching
 
 logger = getLogger(__name__)
+
+# --- Cache key helpers ---
+
+
+def make_driver_cache_key(driver_id):
+    return f"driver:{driver_id}"
+
+
+def make_all_drivers_cache_key(only_active):
+    return f"drivers:all:{only_active}"
+
+
+def make_vehicle_cache_key(vehicle_id):
+    return f"vehicle:{vehicle_id}"
+
+
+def make_all_vehicles_cache_key(status_filter):
+    return f"vehicles:all:{status_filter or 'ANY'}"
+
+
+# --- CRUD Drivers ---
 
 
 def create_driver(driver_data: dict) -> Driver:
@@ -37,6 +58,9 @@ def create_driver(driver_data: dict) -> Driver:
         sqlAlchemy.session.add(new_driver)
         sqlAlchemy.session.commit()
         sqlAlchemy.session.refresh(new_driver)
+        # Invalida cache de listas
+        flaskCaching.delete(make_all_drivers_cache_key(True))
+        flaskCaching.delete(make_all_drivers_cache_key(False))
         return new_driver
     except IntegrityError as exc:
         sqlAlchemy.session.rollback()
@@ -58,8 +82,15 @@ def create_driver(driver_data: dict) -> Driver:
 
 def get_driver_by_id(driver_id: int) -> Driver | None:
     """Busca um motorista por ID."""
+    cache_key = make_driver_cache_key(driver_id)
+    cached = flaskCaching.get(cache_key)
+    if cached:
+        return cached
     try:
-        return sqlAlchemy.session.query(Driver).filter(Driver.id == driver_id).first()
+        driver = sqlAlchemy.session.query(Driver).filter(Driver.id == driver_id).first()
+        if driver:
+            flaskCaching.set(cache_key, driver, timeout=120)
+        return driver
     except SQLAlchemyError as e:
         logger.error(
             "Erro de BD ao obter motorista por ID %s: %s", driver_id, e, exc_info=True
@@ -69,11 +100,17 @@ def get_driver_by_id(driver_id: int) -> Driver | None:
 
 def get_all_drivers(only_active: bool = False) -> list[Driver]:
     """Retorna todos os motoristas."""
+    cache_key = make_all_drivers_cache_key(only_active)
+    cached = flaskCaching.get(cache_key)
+    if cached:
+        return cached
     try:
         query = sqlAlchemy.session.query(Driver)
         if only_active:
             query = query.filter(Driver.is_active.is_(True))
-        return query.order_by(Driver.last_name, Driver.first_name).all()
+        result = query.order_by(Driver.last_name, Driver.first_name).all()
+        flaskCaching.set(cache_key, result, timeout=120)
+        return result
     except SQLAlchemyError as e:
         logger.error("Erro de BD ao obter todos os motoristas: %s", e, exc_info=True)
         raise ValueError("Erro de BD ao obter todos os motoristas.") from e
@@ -113,6 +150,10 @@ def update_driver(driver_id: int, driver_data: dict) -> Driver | None:
             return driver_to_update
         sqlAlchemy.session.commit()
         sqlAlchemy.session.refresh(driver_to_update)
+        # Invalida cache
+        flaskCaching.delete(make_driver_cache_key(driver_id))
+        flaskCaching.delete(make_all_drivers_cache_key(True))
+        flaskCaching.delete(make_all_drivers_cache_key(False))
         return driver_to_update
     except IntegrityError as exc:
         sqlAlchemy.session.rollback()
@@ -144,13 +185,17 @@ def delete_driver_by_id(driver_id: int) -> bool:
     try:
         driver_to_delete = get_driver_by_id(driver_id)
         if driver_to_delete:
-            if driver_to_delete.bookings:
+            if getattr(driver_to_delete, "bookings", None):
                 raise ValueError(
                     "Não é possível excluir o motorista ID %s pois está associado a reservas."
                     % driver_id
                 )
             sqlAlchemy.session.delete(driver_to_delete)
             sqlAlchemy.session.commit()
+            # Invalida cache
+            flaskCaching.delete(make_driver_cache_key(driver_id))
+            flaskCaching.delete(make_all_drivers_cache_key(True))
+            flaskCaching.delete(make_all_drivers_cache_key(False))
             return True
         return False
     except ValueError as ve:
@@ -178,7 +223,7 @@ def delete_driver_by_id(driver_id: int) -> bool:
         raise ValueError("Erro inesperado ao excluir motorista.") from e_unexp
 
 
-# --- Funções CRUD para Veículos ---
+# --- CRUD Veículos ---
 
 
 def create_vehicle(vehicle_data: dict) -> Vehicle:
@@ -213,6 +258,10 @@ def create_vehicle(vehicle_data: dict) -> Vehicle:
         sqlAlchemy.session.add(new_vehicle)
         sqlAlchemy.session.commit()
         sqlAlchemy.session.refresh(new_vehicle)
+        # Invalida caches de lista de veículos
+        flaskCaching.delete(make_all_vehicles_cache_key(None))
+        flaskCaching.delete(make_all_vehicles_cache_key("ACTIVE"))
+        flaskCaching.delete(make_all_vehicles_cache_key("INACTIVE"))
         return new_vehicle
     except IntegrityError as exc:
         sqlAlchemy.session.rollback()
@@ -234,10 +283,17 @@ def create_vehicle(vehicle_data: dict) -> Vehicle:
 
 def get_vehicle_by_id(vehicle_id: int) -> Vehicle | None:
     """Busca veículo por ID."""
+    cache_key = make_vehicle_cache_key(vehicle_id)
+    cached = flaskCaching.get(cache_key)
+    if cached:
+        return cached
     try:
-        return (
+        vehicle = (
             sqlAlchemy.session.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
         )
+        if vehicle:
+            flaskCaching.set(cache_key, vehicle, timeout=120)
+        return vehicle
     except SQLAlchemyError as e:
         logger.error(
             "Erro de BD ao obter veículo por ID %s: %s", vehicle_id, e, exc_info=True
@@ -247,11 +303,19 @@ def get_vehicle_by_id(vehicle_id: int) -> Vehicle | None:
 
 def get_all_vehicles(status_filter: str | None = None) -> list[Vehicle]:
     """Retorna todos os veículos."""
+    cache_key = make_all_vehicles_cache_key(status_filter)
+    cached = flaskCaching.get(cache_key)
+    if cached:
+        return cached
     try:
         query = sqlAlchemy.session.query(Vehicle)
         if status_filter and status_filter.strip():
             query = query.filter(Vehicle.status == status_filter.strip().upper())
-        return query.order_by(Vehicle.make, Vehicle.model, Vehicle.license_plate).all()
+        result = query.order_by(
+            Vehicle.make, Vehicle.model, Vehicle.license_plate
+        ).all()
+        flaskCaching.set(cache_key, result, timeout=120)
+        return result
     except SQLAlchemyError as e:
         logger.error("Erro de BD ao obter todos os veículos: %s", e, exc_info=True)
         raise ValueError("Erro de BD ao obter todos os veículos.") from e
@@ -324,6 +388,11 @@ def update_vehicle(vehicle_id: int, vehicle_data: dict) -> Vehicle | None:
             return vehicle_to_update
         sqlAlchemy.session.commit()
         sqlAlchemy.session.refresh(vehicle_to_update)
+        # Invalida cache
+        flaskCaching.delete(make_vehicle_cache_key(vehicle_id))
+        flaskCaching.delete(make_all_vehicles_cache_key(None))
+        flaskCaching.delete(make_all_vehicles_cache_key("ACTIVE"))
+        flaskCaching.delete(make_all_vehicles_cache_key("INACTIVE"))
         return vehicle_to_update
     except IntegrityError as exc:
         sqlAlchemy.session.rollback()
@@ -357,6 +426,11 @@ def delete_vehicle_by_id(vehicle_id: int) -> bool:
         if vehicle_to_delete:
             sqlAlchemy.session.delete(vehicle_to_delete)
             sqlAlchemy.session.commit()
+            # Invalida cache
+            flaskCaching.delete(make_vehicle_cache_key(vehicle_id))
+            flaskCaching.delete(make_all_vehicles_cache_key(None))
+            flaskCaching.delete(make_all_vehicles_cache_key("ACTIVE"))
+            flaskCaching.delete(make_all_vehicles_cache_key("INACTIVE"))
             return True
         return False
     except ValueError as ve:

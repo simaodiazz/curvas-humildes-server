@@ -1,17 +1,22 @@
-"""Serviço para configuração de tarifas."""
-
+"""Serviço para configuração de tarifas, com Flask-Caching."""
 import datetime
 from logging import getLogger
 from flask import current_app
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from ..db import sqlAlchemy
 from ..models.tariff_settings import TariffSettings
+from ..cache import flaskCaching  # <---- ADICIONE ESTA LINHA
 
 logger = getLogger(__name__)
 
+_TARIFF_SETTINGS_CACHE_KEY = "tariff_settings:active"
+
 
 def get_active_tariff_settings() -> TariffSettings:
-    """Obtém ou cria as configurações de tarifa ativas (id=1)."""
+    """Obtém ou cria as configurações de tarifa ativas (id=1), com cache."""
+    cached = flaskCaching.get(_TARIFF_SETTINGS_CACHE_KEY)
+    if cached:
+        return cached
     try:
         settings = (
             sqlAlchemy.session.query(TariffSettings)
@@ -50,6 +55,10 @@ def get_active_tariff_settings() -> TariffSettings:
                 sqlAlchemy.session.add(default_settings)
                 sqlAlchemy.session.commit()
                 logger.info("Config. tarifa padrão criada.")
+                # Cacheia!
+                flaskCaching.set(
+                    _TARIFF_SETTINGS_CACHE_KEY, default_settings, timeout=300
+                )
                 return default_settings
             except IntegrityError as ie:
                 sqlAlchemy.session.rollback()
@@ -63,6 +72,7 @@ def get_active_tariff_settings() -> TariffSettings:
                     .first()
                 )
                 if settings:
+                    flaskCaching.set(_TARIFF_SETTINGS_CACHE_KEY, settings, timeout=300)
                     return settings
                 logger.error("Falha ao obter tarifa mesmo após erro integridade.")
                 raise ValueError(
@@ -72,6 +82,8 @@ def get_active_tariff_settings() -> TariffSettings:
                 sqlAlchemy.session.rollback()
                 logger.error("Erro BD criar tarifa padrão: %s", e_inner, exc_info=True)
                 raise ValueError("Erro BD criar config. tarifa.") from e_inner
+        # Cacheia!
+        flaskCaching.set(_TARIFF_SETTINGS_CACHE_KEY, settings, timeout=300)
         return settings
     except SQLAlchemyError as e_outer:
         logger.error("Erro BD geral obter tarifa: %s", e_outer, exc_info=True)
@@ -82,7 +94,7 @@ def get_active_tariff_settings() -> TariffSettings:
 
 
 def update_tariff_settings(settings_data: dict) -> TariffSettings:
-    """Atualiza os valores das configurações de tarifa."""
+    """Atualiza os valores das configurações de tarifa, invalidando o cache."""
     try:
         settings_to_update = (
             sqlAlchemy.session.query(TariffSettings)
@@ -151,6 +163,7 @@ def update_tariff_settings(settings_data: dict) -> TariffSettings:
             sqlAlchemy.session.commit()
             sqlAlchemy.session.refresh(settings_to_update)
             logger.info("Config. tarifa atualizada: %s", settings_to_update)
+            flaskCaching.delete(_TARIFF_SETTINGS_CACHE_KEY)  # <------- INVALIDA CACHE!
         else:
             logger.info("Nenhum campo de tarifa foi atualizado.")
         return settings_to_update

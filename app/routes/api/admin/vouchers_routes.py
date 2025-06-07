@@ -1,8 +1,8 @@
 from flask import jsonify, request
-
 from ....models.voucher import Voucher
 from ....services import vouchers_service
 from .admin_routes import admin_blueprint, logger
+from ....cache import flaskCaching
 
 
 def _serialize_voucher_details(voucher: Voucher):
@@ -39,6 +39,7 @@ def admin_create_voucher_ep():
         return jsonify({"error": "Tipo desconto obrigatório."}), 400
     try:
         new_voucher = vouchers_service.create_voucher(data)
+        flaskCaching.delete("admin_get_all_vouchers")  # Limpa cache após criar
         return jsonify(_serialize_voucher_details(new_voucher)), 201
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
@@ -48,6 +49,7 @@ def admin_create_voucher_ep():
 
 
 @admin_blueprint.route("/admin/vouchers", methods=["GET"])
+@flaskCaching.cached(timeout=60, key_prefix="admin_get_all_vouchers")
 def admin_get_all_vouchers_ep():
     try:
         all_vouchers_orm = vouchers_service.get_all_vouchers()
@@ -58,6 +60,10 @@ def admin_get_all_vouchers_ep():
 
 
 @admin_blueprint.route("/admin/vouchers/<int:voucher_id>", methods=["GET"])
+@flaskCaching.cached(
+    timeout=60,
+    key_prefix=lambda: f"admin_get_voucher_{request.view_args['voucher_id']}",
+)
 def admin_get_voucher_ep(voucher_id):
     try:
         voucher = vouchers_service.get_voucher_by_id(voucher_id)
@@ -88,6 +94,8 @@ def admin_update_voucher_ep(voucher_id):
         return jsonify({"error": "Nenhum campo válido."}), 400
     try:
         updated_voucher = vouchers_service.update_voucher(voucher_id, data)
+        flaskCaching.delete("admin_get_all_vouchers")
+        flaskCaching.delete(f"admin_get_voucher_{voucher_id}")
         if updated_voucher:
             return jsonify(_serialize_voucher_details(updated_voucher)), 200
         else:
@@ -103,6 +111,8 @@ def admin_update_voucher_ep(voucher_id):
 def admin_delete_voucher_ep(voucher_id):
     try:
         success = vouchers_service.delete_voucher(voucher_id)
+        flaskCaching.delete("admin_get_all_vouchers")
+        flaskCaching.delete(f"admin_get_voucher_{voucher_id}")
         if success:
             return "", 204
         else:

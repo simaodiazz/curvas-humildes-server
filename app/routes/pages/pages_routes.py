@@ -5,8 +5,8 @@ from flask import Blueprint, render_template
 pages_blueprint = Blueprint(
     name="pages",
     import_name=__name__,
-    template_folder="pages/templates",
-    static_folder="pages/static",
+    template_folder="templates",
+    static_folder="static",
 )
 
 logger = getLogger(__name__)

@@ -7,6 +7,7 @@ from flask_cors import CORS
 from flask_mail import Mail
 
 from .db import init_db_engine_with_context, sqlAlchemy
+from .cache import flaskCaching
 
 cors = CORS()
 mail = Mail()
@@ -29,7 +30,7 @@ def create_app(config_object_name="config"):
                 f"Não foi possível criar a pasta instance em {app.instance_path}"
             )
 
-    app.config.from_pyfile("config.py", silent=True)
+    app.config.from_object("config.Development")
 
     if not app.debug and not app.testing:
         stream_handler = logging.StreamHandler()
@@ -42,6 +43,7 @@ def create_app(config_object_name="config"):
     cors.init_app(app)
     mail.init_app(app)
     sqlAlchemy.init_app(app)
+    flaskCaching.init_app(app)
 
     from .routes.api.admin.admin_routes import admin_blueprint
     from .routes.api.handlers_routes import handlers_blueprint

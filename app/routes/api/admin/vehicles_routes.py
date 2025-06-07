@@ -1,8 +1,8 @@
 from flask import jsonify, request
-
 from ....models.vehicle import Vehicle
 from ....services import drivers_service
 from .admin_routes import admin_blueprint, logger
+from ....cache import flaskCaching
 
 
 def _serialize_vehicle_details(vehicle: Vehicle):
@@ -28,6 +28,8 @@ def admin_create_vehicle_ep():
         return jsonify({"error": "Matrícula obrigatória."}), 400
     try:
         new_vehicle = drivers_service.create_vehicle(data)
+        # Invalida cache da listagem após criação
+        flaskCaching.delete("admin_get_all_vehicles")
         return jsonify(_serialize_vehicle_details(new_vehicle)), 201
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
@@ -37,6 +39,7 @@ def admin_create_vehicle_ep():
 
 
 @admin_blueprint.route("/admin/vehicles", methods=["GET"])
+@flaskCaching.cached(timeout=60, key_prefix="admin_get_all_vehicles")
 def admin_get_all_vehicles_ep():
     status_filter = request.args.get("status", default=None, type=str)
     try:
@@ -48,6 +51,7 @@ def admin_get_all_vehicles_ep():
 
 
 @admin_blueprint.route("/admin/vehicles/<int:vehicle_id>", methods=["GET"])
+@flaskCaching.cached(timeout=60, key_prefix="admin_get_vehicle")
 def admin_get_vehicle_ep(vehicle_id):
     try:
         vehicle = drivers_service.get_vehicle_by_id(vehicle_id)
@@ -78,6 +82,9 @@ def admin_update_vehicle_ep(vehicle_id):
         return jsonify({"error": "Nenhum campo válido."}), 400
     try:
         updated_vehicle = drivers_service.update_vehicle(vehicle_id, data)
+        # Limpa cache após atualização
+        flaskCaching.delete("admin_get_all_vehicles")
+        flaskCaching.delete("admin_get_vehicle")
         if updated_vehicle:
             return jsonify(_serialize_vehicle_details(updated_vehicle)), 200
         else:
@@ -93,6 +100,9 @@ def admin_update_vehicle_ep(vehicle_id):
 def admin_delete_vehicle_ep(vehicle_id):
     try:
         success = drivers_service.delete_vehicle_by_id(vehicle_id)
+        # Limpa cache após exclusão, independente de existir ou não
+        flaskCaching.delete("admin_get_all_vehicles")
+        flaskCaching.delete("admin_get_vehicle")
         if success:
             return "", 204
         else:

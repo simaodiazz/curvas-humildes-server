@@ -1,13 +1,14 @@
 import logging
 
 from app import create_app
+from flask_caching import Cache
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-app = create_app()
+app = create_app(config_object_name="config")
 
 if __name__ == "__main__":
     host = app.config.get("HOST", "127.0.0.1")

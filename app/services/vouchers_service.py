@@ -1,14 +1,24 @@
-"""Serviço de gestão de vouchers."""
-
+"""Serviço de gestão de vouchers, com Flask-Caching."""
 import datetime
 from logging import getLogger
 from typing import Optional, Tuple, List
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-
 from ..db import sqlAlchemy
 from ..models.voucher import Voucher
+from ..cache import flaskCaching
 
 logger = getLogger(__name__)
+
+
+def _make_id_cache_key(voucher_id):
+    return f"voucher:id:{voucher_id}"
+
+
+def _make_code_cache_key(code):
+    return f"voucher:code:{code.upper()}"
+
+
+_ALL_VOUCHERS_CACHE_KEY = "voucher:all"
 
 
 def _parse_code(voucher_data: dict) -> str:
@@ -32,7 +42,6 @@ def _parse_discount_value(voucher_data: dict, discount_type: str) -> float:
         discount_value = float(voucher_data.get("discount_value", 0))
     except (TypeError, ValueError) as exc:
         raise ValueError("Valor do desconto deve ser um número válido.") from exc
-
     if discount_value <= 0:
         raise ValueError("Valor do desconto deve ser maior que zero.")
     if discount_type == "PERCENTAGE" and not (0 < discount_value <= 100):
@@ -77,19 +86,11 @@ def _parse_min_booking_value(value) -> Optional[float]:
     return None
 
 
+# --- CRUD principal com cache ---
+
+
 def create_voucher(voucher_data: dict) -> Voucher:
-    """
-    Cria um novo voucher com os dados fornecidos.
-
-    Args:
-        voucher_data (dict): Dados do voucher.
-
-    Returns:
-        Voucher: Instância recém-criada do voucher.
-
-    Raises:
-        ValueError: Quando os dados são inválidos ou o código já existe.
-    """
+    """Cria um novo voucher com os dados fornecidos."""
     try:
         code = _parse_code(voucher_data)
         discount_type = _parse_discount_type(voucher_data)
@@ -99,7 +100,6 @@ def create_voucher(voucher_data: dict) -> Voucher:
         min_booking_value = _parse_min_booking_value(
             voucher_data.get("min_booking_value")
         )
-
         new_voucher = Voucher(
             code=code,
             description=voucher_data.get("description"),
@@ -113,8 +113,11 @@ def create_voucher(voucher_data: dict) -> Voucher:
         sqlAlchemy.session.add(new_voucher)
         sqlAlchemy.session.commit()
         sqlAlchemy.session.refresh(new_voucher)
+        # Invalida todos caches relevantes
+        flaskCaching.delete(_ALL_VOUCHERS_CACHE_KEY)
+        flaskCaching.delete(_make_code_cache_key(code))
+        flaskCaching.delete(_make_id_cache_key(new_voucher.id))
         return new_voucher
-
     except IntegrityError as exc:
         sqlAlchemy.session.rollback()
         raise ValueError(
@@ -134,20 +137,16 @@ def create_voucher(voucher_data: dict) -> Voucher:
 
 
 def get_voucher_by_id(voucher_id: int) -> Optional[Voucher]:
-    """
-    Obtém um voucher pelo seu ID.
-
-    Args:
-        voucher_id (int): ID do voucher.
-
-    Returns:
-        Voucher | None: O voucher se existir, caso contrário None.
-
-    Raises:
-        ValueError: Se houver erro de base de dados.
-    """
+    """Obtém um voucher pelo seu ID, usando cache."""
+    cache_key = _make_id_cache_key(voucher_id)
+    cached = flaskCaching.get(cache_key)
+    if cached:
+        return cached
     try:
-        return sqlAlchemy.session.query(Voucher).filter_by(id=voucher_id).first()
+        voucher = sqlAlchemy.session.query(Voucher).filter_by(id=voucher_id).first()
+        if voucher:
+            flaskCaching.set(cache_key, voucher, timeout=120)
+        return voucher
     except SQLAlchemyError as e:
         logger.error(
             "Erro de BD ao obter voucher por ID %d: %s", voucher_id, e, exc_info=True
@@ -156,24 +155,20 @@ def get_voucher_by_id(voucher_id: int) -> Optional[Voucher]:
 
 
 def get_voucher_by_code(code: str) -> Optional[Voucher]:
-    """
-    Obtém um voucher pelo seu código.
-
-    Args:
-        code (str): Código do voucher.
-
-    Returns:
-        Voucher | None: O voucher se existir, caso contrário None.
-
-    Raises:
-        ValueError: Se houver erro de base de dados.
-    """
+    """Obtém um voucher pelo seu código, usando cache."""
+    cache_key = _make_code_cache_key(code)
+    cached = flaskCaching.get(cache_key)
+    if cached:
+        return cached
     try:
-        return (
+        voucher = (
             sqlAlchemy.session.query(Voucher)
             .filter(Voucher.code == code.upper())
             .first()
         )
+        if voucher:
+            flaskCaching.set(cache_key, voucher, timeout=120)
+        return voucher
     except SQLAlchemyError as e:
         logger.error(
             "Erro de BD ao obter voucher por código %s: %s", code, e, exc_info=True
@@ -182,45 +177,29 @@ def get_voucher_by_code(code: str) -> Optional[Voucher]:
 
 
 def get_all_vouchers() -> List[Voucher]:
-    """
-    Obtém todos os vouchers ordenados pela data de criação decrescente.
-
-    Returns:
-        list[Voucher]: Lista de vouchers.
-
-    Raises:
-        ValueError: Em caso de erro de BD.
-    """
+    """Obtém todos os vouchers ordenados pela data de criação decrescente, usando cache."""
+    cache_key = _ALL_VOUCHERS_CACHE_KEY
+    cached = flaskCaching.get(cache_key)
+    if cached:
+        return cached
     try:
-        return (
+        result = (
             sqlAlchemy.session.query(Voucher).order_by(Voucher.created_at.desc()).all()
         )
+        flaskCaching.set(cache_key, result, timeout=120)
+        return result
     except SQLAlchemyError as e:
         logger.error("Erro de BD ao obter todos os vouchers: %s", e, exc_info=True)
         raise ValueError("Erro de BD ao obter todos os vouchers.") from e
 
 
 def update_voucher(voucher_id: int, voucher_data: dict) -> Optional[Voucher]:
-    """
-    Atualiza os dados de um voucher existente.
-
-    Args:
-        voucher_id (int): ID do voucher a atualizar.
-        voucher_data (dict): Novos dados.
-
-    Returns:
-        Voucher | None: O voucher atualizado, ou None se não encontrado.
-
-    Raises:
-        ValueError: Quando dados inválidos ou erro de base de dados.
-    """
+    """Atualiza os dados de um voucher existente (com limpeza de cache)."""
     try:
         voucher = get_voucher_by_id(voucher_id)
         if not voucher:
             return None
-
         updated_fields = False
-
         if "description" in voucher_data:
             voucher.description = voucher_data["description"]
             updated_fields = True
@@ -248,13 +227,15 @@ def update_voucher(voucher_id: int, voucher_data: dict) -> Optional[Voucher]:
         if "is_active" in voucher_data:
             voucher.is_active = bool(voucher_data["is_active"])
             updated_fields = True
-
         if updated_fields:
             voucher.updated_at = datetime.datetime.utcnow()
             sqlAlchemy.session.commit()
             sqlAlchemy.session.refresh(voucher)
+            # Limpa caches
+            flaskCaching.delete(_ALL_VOUCHERS_CACHE_KEY)
+            flaskCaching.delete(_make_code_cache_key(voucher.code))
+            flaskCaching.delete(_make_id_cache_key(voucher.id))
         return voucher
-
     except ValueError:
         sqlAlchemy.session.rollback()
         raise
@@ -276,23 +257,16 @@ def update_voucher(voucher_id: int, voucher_data: dict) -> Optional[Voucher]:
 
 
 def delete_voucher(voucher_id: int) -> bool:
-    """
-    Remove um voucher do sistema.
-
-    Args:
-        voucher_id (int): ID do voucher a excluir.
-
-    Returns:
-        bool: True se removido, False se não encontrado.
-
-    Raises:
-        ValueError: Em caso de erro de BD, ou se o voucher está referenciado.
-    """
+    """Remove um voucher do sistema (inclusive do cache)."""
     try:
         voucher = get_voucher_by_id(voucher_id)
         if voucher:
             sqlAlchemy.session.delete(voucher)
             sqlAlchemy.session.commit()
+            # Limpa caches
+            flaskCaching.delete(_ALL_VOUCHERS_CACHE_KEY)
+            flaskCaching.delete(_make_code_cache_key(voucher.code))
+            flaskCaching.delete(_make_id_cache_key(voucher.id))
             return True
         return False
     except SQLAlchemyError as e:
@@ -322,19 +296,7 @@ def delete_voucher(voucher_id: int) -> bool:
 def validate_voucher_for_use(
     code: str, booking_budget_pre_vat: Optional[float] = None
 ) -> Voucher:
-    """
-    Valida se um voucher pode ser utilizado numa dada reserva.
-
-    Args:
-        code (str): Código do voucher.
-        booking_budget_pre_vat (float|None): Valor da reserva antes de IVA.
-
-    Returns:
-        Voucher: O voucher válido.
-
-    Raises:
-        ValueError: Caso o voucher não possa ser utilizado.
-    """
+    """Valida se um voucher pode ser utilizado numa dada reserva."""
     if not code:
         raise ValueError("Código do voucher não pode ser vazio.")
     voucher = get_voucher_by_code(code)
@@ -364,16 +326,7 @@ def validate_voucher_for_use(
 def apply_voucher_to_budget(
     original_budget_pre_vat: float, voucher: Voucher
 ) -> Tuple[float, float]:
-    """
-    Aplica o desconto do voucher ao valor de orçamento.
-
-    Args:
-        original_budget_pre_vat (float): Valor original sem IVA.
-        voucher (Voucher): Voucher válido.
-
-    Returns:
-        tuple: (novo_valor_pre_vat, valor_desconto)
-    """
+    """Aplica o desconto do voucher ao valor de orçamento."""
     discount_amount = 0.0
     if voucher.discount_type == "PERCENTAGE":
         discount_amount = (original_budget_pre_vat * voucher.discount_value) / 100.0
@@ -385,21 +338,17 @@ def apply_voucher_to_budget(
 
 
 def record_voucher_usage(voucher_code: str):
-    """
-    Regista a utilização do voucher, incrementando o contador de usos atuais.
-
-    Args:
-        voucher_code (str): Código do voucher.
-
-    Returns:
-        None
-    """
+    """Regista a utilização do voucher, incrementando o contador de usos atuais + limpa cache daquele voucher."""
     try:
         voucher = get_voucher_by_code(voucher_code)
         if voucher:
             voucher.current_uses += 1
             voucher.updated_at = datetime.datetime.utcnow()
             sqlAlchemy.session.commit()
+            # Limpa caches
+            flaskCaching.delete(_ALL_VOUCHERS_CACHE_KEY)
+            flaskCaching.delete(_make_code_cache_key(voucher.code))
+            flaskCaching.delete(_make_id_cache_key(voucher.id))
             logger.info(
                 "Utilização do voucher '%s' registada. Usos atuais: %d",
                 voucher.code,

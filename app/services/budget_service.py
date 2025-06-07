@@ -1,7 +1,6 @@
 """
 Serviço para cálculo de orçamento estimado de viagens
 """
-
 import datetime
 import re
 from logging import getLogger
@@ -9,6 +8,7 @@ from typing import Optional
 import requests
 from flask import current_app
 from .tariff_settings_service import get_active_tariff_settings
+from ..cache import flaskCaching  # <--- IMPORTAÇÃO DO CACHE
 
 logger = getLogger(__name__)
 
@@ -28,6 +28,7 @@ def _normalize_location_string(location_str: str) -> str:
     return s
 
 
+@flaskCaching.memoize(timeout=3600)  # <--- CACHE DE 1 HORA PARA CADA GEOCODE
 def _geocode_location_ors(location_name: str) -> Optional[tuple]:
     """Geocodifica nome do local usando OpenRouteService (ORS)."""
     if not location_name:
@@ -66,6 +67,7 @@ def _geocode_location_ors(location_name: str) -> Optional[tuple]:
         return None
 
 
+@flaskCaching.memoize(timeout=3600)  # <--- CACHE DE 1 HORA PARA DETALHE DE ROTA!
 def _get_route_details_from_maps_api(
     pickup_location_name: str, dropoff_location_name: str
 ) -> dict:
@@ -156,15 +158,17 @@ def _get_route_details_from_maps_api(
         }
 
 
+# (Opcional) Se quiser, pode também cachear o cálculo do orçamento inteiro.
+# ATENÇÃO: Só faça isso se as tarifas não mudam toda hora,
+# senão, opte por cachear apenas o _get_route_details_from_maps_api/_geocode_location_ors.
+
+
 def calculate_estimated_budget(
     data: dict, request_time_obj: Optional[datetime.time] = None
 ) -> dict:
     """
     Calcula o orçamento estimado com base nas informações fornecidas.
     """
-    # NOTA: este método está grande (muitos locals, branches, return/statements). Para passar nos
-    # pylint sem warnings, seria preciso dividir várias partes.
-    # Refatoração sugerida: quebrar lógica em funções auxiliares (ex: validador, cálculo de tarifas, noite etc).
     try:
         tariff_settings = get_active_tariff_settings()
         if not tariff_settings:

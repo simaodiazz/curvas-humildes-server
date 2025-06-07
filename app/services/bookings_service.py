@@ -1,5 +1,4 @@
 """Serviço de reservas (booking) - funções para criar, alterar, consultar e excluir reservas.
-
 Inclui regras de negócio para disponibilidade de motoristas, aplicação de vouchers, orçamento,
 atribuição de motorista e envio de e-mail.
 """
@@ -19,10 +18,12 @@ from .vouchers_service import (
     record_voucher_usage,
     validate_voucher_for_use,
 )
+from ..cache import flaskCaching  # <-- USO CORRETO DO OBJETO CACHE
 
 logger = getLogger(__name__)
 
 
+@flaskCaching.memoize(timeout=120)  # <-- CACHING APLICADO NA FUNÇÃO DE DISPONIBILIDADE
 def check_availability(
     booking_date_obj: datetime.date,
     booking_time_obj: datetime.time,
@@ -40,7 +41,6 @@ def check_availability(
         if num_active_drivers == 0:
             logger.info("Nenhum motorista ativo, disponibilidade é false.")
             return False
-
         new_booking_start_dt = datetime.datetime.combine(
             booking_date_obj, booking_time_obj
         )
@@ -53,7 +53,6 @@ def check_availability(
             + datetime.timedelta(minutes=booking_duration_minutes)
             + slot_overlap_delta
         )
-
         relevant_statuses = {
             "PENDING_CONFIRMATION",
             "CONFIRMED",
@@ -92,7 +91,6 @@ def check_availability(
             num_active_drivers,
         )
         return conflicting_bookings_count < num_active_drivers
-
     except SQLAlchemyError as e:
         logger.error("Erro de BD ao verificar disponibilidade: %s", e, exc_info=True)
         raise ValueError("Erro de base de dados ao verificar disponibilidade.") from e
@@ -120,10 +118,8 @@ def create_booking_record(booking_data: dict) -> Booking:
         bags_str = booking_data["bags"]
         instructions = booking_data.get("instructions")
         voucher_code_from_frontend = booking_data.get("voucher_code")
-
         if not passenger_name.strip():
             raise ValueError("Nome do passageiro é obrigatório.")
-
         try:
             date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
             time_obj = datetime.datetime.strptime(time_str, "%H:%M").time()
@@ -134,14 +130,12 @@ def create_booking_record(booking_data: dict) -> Booking:
             raise ValueError(
                 f"Dados de reserva inválidos (data, hora, passageiros, malas ou duração): {e_conv}"
             ) from e_conv
-
         if duration_minutes <= 0:
             raise ValueError("Duração da reserva deve ser positiva.")
         if passengers < 1:
             raise ValueError("Número de passageiros deve ser pelo menos 1.")
         if bags < 0:
             raise ValueError("Número de malas não pode ser negativo.")
-
         budget_calc_data = {
             "passengers": passengers,
             "bags": bags,
@@ -156,7 +150,6 @@ def create_booking_record(booking_data: dict) -> Booking:
         discount_amount_calc = 0.0
         applied_voucher_code_final = None
         validated_voucher_obj = None
-
         if voucher_code_from_frontend and voucher_code_from_frontend.strip():
             try:
                 validated_voucher_obj = validate_voucher_for_use(
@@ -179,13 +172,11 @@ def create_booking_record(booking_data: dict) -> Booking:
                     voucher_code_from_frontend,
                     ve_voucher,
                 )
-
         vat_percentage_calc = current_app.config.get("VAT_RATE", 23.0)
         vat_amount_calc = round(
             final_budget_pre_vat_calc * (vat_percentage_calc / 100.0), 2
         )
         total_with_vat_calc = round(final_budget_pre_vat_calc + vat_amount_calc, 2)
-
         new_booking = Booking(
             passenger_name=passenger_name,
             passenger_phone=passenger_phone,
@@ -206,19 +197,20 @@ def create_booking_record(booking_data: dict) -> Booking:
             applied_voucher_code=applied_voucher_code_final,
             status="PENDING_CONFIRMATION",
         )
-
         sqlAlchemy.session.add(new_booking)
         sqlAlchemy.session.commit()
-
         if new_booking.applied_voucher_code:
             record_voucher_usage(new_booking.applied_voucher_code)
-
         sqlAlchemy.session.refresh(new_booking)
         logger.info(
             "Reserva criada na BD com ID: %s, Total c/IVA: %s, Voucher: %s",
             new_booking.id,
             new_booking.total_with_vat,
             new_booking.applied_voucher_code,
+        )
+        # Limpa cache de disponibilidade ao criar reserva!
+        flaskCaching.delete_memoized(
+            check_availability, date_obj, time_obj, duration_minutes
         )
         return new_booking
     except ValueError as ve:
@@ -254,6 +246,13 @@ def update_booking_status(booking_id: int, new_status: str) -> "Booking | None":
             booking_to_update.status = new_status
             sqlAlchemy.session.commit()
             sqlAlchemy.session.refresh(booking_to_update)
+            # Limpa cache também ao mudar status que pode afetar disponibilidade!
+            flaskCaching.delete_memoized(
+                check_availability,
+                booking_to_update.date,
+                booking_to_update.time,
+                booking_to_update.duration_minutes,
+            )
             return booking_to_update
         return None
     except SQLAlchemyError as e:
@@ -305,14 +304,12 @@ def assign_driver_to_booking(
                 )
         previous_driver_id = booking_to_update.assigned_driver_id
         booking_to_update.assigned_driver_id = driver_id
-
         if driver_id is not None and booking_to_update.status == "CONFIRMED":
             booking_to_update.status = "DRIVER_ASSIGNED"
         elif driver_id is None and booking_to_update.status == "DRIVER_ASSIGNED":
             booking_to_update.status = "CONFIRMED"
         sqlAlchemy.session.commit()
         sqlAlchemy.session.refresh(booking_to_update)
-
         if (
             mail_instance
             and driver_id is not None
@@ -332,6 +329,13 @@ def assign_driver_to_booking(
                     email_error,
                     exc_info=True,
                 )
+        # Limpa cache de disponibilidade, pois atribuição pode afetar motoristas livres!
+        flaskCaching.delete_memoized(
+            check_availability,
+            booking_to_update.date,
+            booking_to_update.time,
+            booking_to_update.duration_minutes,
+        )
         return booking_to_update
     except ValueError as ve:
         raise ve
@@ -383,6 +387,13 @@ def delete_booking_by_id(booking_id: int) -> bool:
         if booking_to_delete:
             sqlAlchemy.session.delete(booking_to_delete)
             sqlAlchemy.session.commit()
+            # Limpa cache de disponibilidade, pois pode abrir vaga
+            flaskCaching.delete_memoized(
+                check_availability,
+                booking_to_delete.date,
+                booking_to_delete.time,
+                booking_to_delete.duration_minutes,
+            )
             return True
         return False
     except SQLAlchemyError as e:

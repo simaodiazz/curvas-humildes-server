@@ -1,11 +1,14 @@
 from flask import jsonify, request
-
 from ....models.tariff_settings import TariffSettings
 from ....services import tariff_settings_service
 from .admin_routes import admin_blueprint, logger
+from ....cache import flaskCaching
 
 
 @admin_blueprint.route("/admin/settings/tariffs", methods=["GET"])
+@flaskCaching.cached(
+    timeout=60, key_prefix="admin_get_tariff_settings"
+)  # cache por 60s
 def admin_get_tariff_settings_ep():
     try:
         current_settings = tariff_settings_service.get_active_tariff_settings()
@@ -25,6 +28,8 @@ def admin_update_tariff_settings_ep():
     data = request.get_json()
     try:
         updated_settings = tariff_settings_service.update_tariff_settings(data)
+        # Limpa o cache da rota GET após update
+        flaskCaching.delete("admin_get_tariff_settings")
         return jsonify(_serialize_tariff_settings_details(updated_settings)), 200
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400

@@ -3,6 +3,7 @@ from flask import jsonify, request
 from ....models.booking import Booking
 from ....services import bookings_service
 from .admin_routes import admin_blueprint, logger
+from ....cache import flaskCaching
 
 
 def _serialize_booking_details(booking: Booking):
@@ -38,7 +39,13 @@ def _serialize_booking_details(booking: Booking):
     }
 
 
+from ....cache import flaskCaching
+
+cache = flaskCaching
+
+
 @admin_blueprint.route("/admin/bookings", methods=["GET"])
+@cache.cached(timeout=60, key_prefix="admin_all_bookings")
 def admin_get_all_bookings_ep():
     try:
         all_bookings_orm = bookings_service.get_all_bookings()
@@ -53,6 +60,7 @@ def admin_delete_booking_ep(booking_id):
     try:
         success = bookings_service.delete_booking_by_id(booking_id)
         if success:
+            cache.delete("admin_all_bookings")
             return jsonify({"message": f"Reserva ID {booking_id} excluída."}), 200
         else:
             return jsonify({"error": f"Reserva ID {booking_id} não encontrada."}), 404
@@ -74,6 +82,7 @@ def admin_update_booking_status_ep(booking_id):
     try:
         updated_booking = bookings_service.update_booking_status(booking_id, new_status)
         if updated_booking:
+            cache.delete("admin_all_bookings")
             return jsonify(_serialize_booking_details(updated_booking)), 200
         else:
             return jsonify({"error": f"Reserva ID {booking_id} não encontrada."}), 404
@@ -105,6 +114,7 @@ def admin_assign_driver_ep(booking_id):
             booking_id, driver_id
         )
         if updated_booking:
+            cache.delete("admin_all_bookings")
             return jsonify(_serialize_booking_details(updated_booking)), 200
         else:
             return jsonify({"error": f"Reserva ID {booking_id} não encontrada."}), 404
