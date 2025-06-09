@@ -3,6 +3,7 @@ from ....models.vehicle import Vehicle
 from ....services import drivers_service
 from .admin_routes import admin_blueprint, logger
 from ....cache import flaskCaching
+from flask_login import login_required
 
 
 def _serialize_vehicle_details(vehicle: Vehicle):
@@ -20,6 +21,7 @@ def _serialize_vehicle_details(vehicle: Vehicle):
 
 
 @admin_blueprint.route("/admin/vehicles", methods=["POST"])
+@login_required
 def admin_create_vehicle_ep():
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
@@ -40,6 +42,7 @@ def admin_create_vehicle_ep():
 
 @admin_blueprint.route("/admin/vehicles", methods=["GET"])
 @flaskCaching.cached(timeout=60, key_prefix="admin_get_all_vehicles")
+@login_required
 def admin_get_all_vehicles_ep():
     status_filter = request.args.get("status", default=None, type=str)
     try:
@@ -52,6 +55,7 @@ def admin_get_all_vehicles_ep():
 
 @admin_blueprint.route("/admin/vehicles/<int:vehicle_id>", methods=["GET"])
 @flaskCaching.cached(timeout=60, key_prefix="admin_get_vehicle")
+@login_required
 def admin_get_vehicle_ep(vehicle_id):
     try:
         vehicle = drivers_service.get_vehicle_by_id(vehicle_id)
@@ -65,6 +69,7 @@ def admin_get_vehicle_ep(vehicle_id):
 
 
 @admin_blueprint.route("/admin/vehicles/<int:vehicle_id>", methods=["PATCH"])
+@login_required
 def admin_update_vehicle_ep(vehicle_id):
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
@@ -97,6 +102,7 @@ def admin_update_vehicle_ep(vehicle_id):
 
 
 @admin_blueprint.route("/admin/vehicles/<int:vehicle_id>", methods=["DELETE"])
+@login_required
 def admin_delete_vehicle_ep(vehicle_id):
     try:
         success = drivers_service.delete_vehicle_by_id(vehicle_id)

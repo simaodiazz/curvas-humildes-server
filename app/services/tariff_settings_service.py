@@ -5,7 +5,7 @@ from flask import current_app
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from ..db import sqlAlchemy
 from ..models.tariff_settings import TariffSettings
-from ..cache import flaskCaching  # <---- ADICIONE ESTA LINHA
+from ..cache import flaskCaching
 
 logger = getLogger(__name__)
 

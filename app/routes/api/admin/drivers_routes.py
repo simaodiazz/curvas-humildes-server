@@ -4,6 +4,7 @@ from ....models.driver import Driver
 from ....services import drivers_service
 from .admin_routes import admin_blueprint, logger
 from ....cache import flaskCaching
+from flask_login import login_required
 
 
 def _serialize_driver_details(driver: Driver):
@@ -19,6 +20,7 @@ def _serialize_driver_details(driver: Driver):
 
 
 @admin_blueprint.route("/admin/drivers", methods=["POST"])
+@login_required
 def admin_create_driver_ep():
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
@@ -39,6 +41,7 @@ def admin_create_driver_ep():
 
 @admin_blueprint.route("/admin/drivers", methods=["GET"])
 @flaskCaching.memoize(timeout=60)
+@login_required
 def admin_get_all_drivers_ep():
     only_active_param = request.args.get("active", default=None, type=str)
     only_active = (
@@ -54,6 +57,7 @@ def admin_get_all_drivers_ep():
 
 @admin_blueprint.route("/admin/drivers/<int:driver_id>", methods=["GET"])
 @flaskCaching.memoize(timeout=60)
+@login_required
 def admin_get_driver_ep(driver_id):
     try:
         driver = drivers_service.get_driver_by_id(driver_id)
@@ -67,6 +71,7 @@ def admin_get_driver_ep(driver_id):
 
 
 @admin_blueprint.route("/admin/drivers/<int:driver_id>", methods=["PATCH"])
+@login_required
 def admin_update_driver_ep(driver_id):
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
@@ -90,6 +95,7 @@ def admin_update_driver_ep(driver_id):
 
 
 @admin_blueprint.route("/admin/drivers/<int:driver_id>", methods=["DELETE"])
+@login_required
 def admin_delete_driver_ep(driver_id):
     try:
         success = drivers_service.delete_driver_by_id(driver_id)

@@ -1,8 +1,10 @@
 from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
+import os
 
 sqlAlchemy = SQLAlchemy()
+Model = sqlAlchemy.Model
 
 
 def init_db_engine_with_context(app_instance):
@@ -10,9 +12,24 @@ def init_db_engine_with_context(app_instance):
     Inicializa a base de dados e cria tabelas se não existirem.
     """
     from .models.tariff_settings import TariffSettings
+    from .models.user import User
 
+    sqlAlchemy.create_all()
+
+    # Cria admin só se não existir
+    name = app_instance.config.get("ADMINSTRATOR_NAME")
+    if not User.query.filter_by(name=name).first():
+        user = User()
+        user.name = name
+        user.set_password(app_instance.config.get("ADMINSTRATOR_PASSWORD"))
+        user.role = "admin"
+        sqlAlchemy.session.add(user)
+        sqlAlchemy.session.commit()
+        app_instance.logger.info(f"User `{user.name}` created.")
+    
     try:
         sqlAlchemy.create_all()
+
         app_instance.logger.info(
             f"Base de dados verificada/tabelas criadas em {app_instance.config.get('DATABASE_URI')}"
         )

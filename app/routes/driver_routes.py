@@ -1,12 +1,15 @@
 from os import path
 
 from flask import current_app, jsonify, send_from_directory
+from flask_login import login_required
+
 
 from .main_routes import logger, main_blueprint
 
 
 @main_blueprint.route("/driver-app/")
 @main_blueprint.route("/driver-app/<path:filename>")
+@login_required
 def motorista_app_files(filename="index.html"):
     """Serve os ficheiros estáticos da aplicação do motorista (Capacitor www)."""
     driver_app_folder = path.join(

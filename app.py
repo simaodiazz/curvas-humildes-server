@@ -1,14 +1,18 @@
 import logging
+import os
 
 from app import create_app
-from flask_caching import Cache
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-app = create_app(config_object_name="config")
+profile = os.environ.get("FLASK_PROFILE", "config.Development")
+app = create_app(config_object_name=profile)
+
+if profile == "config.Development":
+    logger.warning("Modo Desenvolvimento ativado.")
 
 if __name__ == "__main__":
     host = app.config.get("HOST", "127.0.0.1")

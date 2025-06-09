@@ -7,10 +7,11 @@ from sqlalchemy import (
     String,
 )
 
-from .entity import Entity
+import datetime
+from app.db import Model as Base
 
 
-class Vehicle(Entity):
+class Vehicle(Base):
     __tablename__ = "vehicles"
     id = Column(Integer, primary_key=True, autoincrement=True)
     license_plate = Column(String(15), nullable=False, unique=True)

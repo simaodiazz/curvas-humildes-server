@@ -1,17 +1,12 @@
-from sqlalchemy import (
-    Boolean,
-    Column,
-    Date,
-    Float,
-    Integer,
-    String,
-)
+from sqlalchemy import Boolean, Column, Date, Float, Integer, String, DateTime
 
-from .entity import Entity
+import datetime
+from app.db import Model as Base
 
 
-class Voucher(Entity):
+class Voucher(Base):
     __tablename__ = "vouchers"
+    id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String(50), nullable=False, unique=True, index=True)
     description = Column(String(255), nullable=True)
     discount_type = Column(String(20), nullable=False)
@@ -21,6 +16,10 @@ class Voucher(Entity):
     current_uses = Column(Integer, default=0)
     min_booking_value = Column(Float, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(
+        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+    )
 
     def __repr__(self):
         return f"<Voucher(id={self.id}, code='{self.code}', type='{self.discount_type}', active={self.is_active})>"

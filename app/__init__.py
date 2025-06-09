@@ -5,20 +5,23 @@ import os
 from flask import Flask
 from flask_cors import CORS
 from flask_mail import Mail
+from flask_login import LoginManager
+from flask_jwt_extended import JWTManager
 
 from .db import init_db_engine_with_context, sqlAlchemy
 from .cache import flaskCaching
 
+app = Flask(__name__, instance_relative_config=True)
+
 cors = CORS()
 mail = Mail()
-
+login_manager = LoginManager()
+jwt = JWTManager()
 
 def create_app(config_object_name="config"):
     """
     App factory: cria e configura a instância da aplicação Flask.
     """
-
-    app = Flask(__name__, instance_relative_config=True)
 
     app.config.from_object(config_object_name)
 
@@ -44,6 +47,8 @@ def create_app(config_object_name="config"):
     mail.init_app(app)
     sqlAlchemy.init_app(app)
     flaskCaching.init_app(app)
+    login_manager.init_app(app)
+    jwt.init_app(app)
 
     from .routes.api.admin.admin_routes import admin_blueprint
     from .routes.api.handlers_routes import handlers_blueprint
@@ -72,3 +77,41 @@ def create_app(config_object_name="config"):
 
     app.logger.info("Aplicação criada e configurada com sucesso.")
     return app
+
+@login_manager.user_loader
+def load_user(user_id):
+    from .models.user import User
+    return User.query.get(int(user_id))
+
+
+PUBLIC_ENDPOINTS = ['main']
+
+PUBLIC_ENDPOINTS = ['/login', '/login/']  # Adicione ambos
+
+@app.before_request
+def require_jwt_for_all_requests():
+    from flask import request
+    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, exceptions as jwt_exceptions
+    from .models.user import User
+
+    # Tira a barra final se tiver, para padronizar
+    path = request.path.rstrip('/')
+
+    if path in (p.rstrip('/') for p in PUBLIC_ENDPOINTS):
+        return
+
+    # Arquivos estáticos, favicon, etc
+    if request.path.startswith('/static/'):
+        return
+
+    # Exige JWT!
+    try:
+        verify_jwt_in_request()
+        user_id = get_jwt_identity()
+        user = User.query.filter_by(id=user_id).first()
+        if not user:
+            return {'msg': 'Token inválido'}, 401
+    except jwt_exceptions.NoAuthorizationError:
+        return {'msg': 'Token de autenticação ausente'}, 401
+    except jwt_exceptions.JWTDecodeError:
+        return {'msg': 'Token inválido'}, 401

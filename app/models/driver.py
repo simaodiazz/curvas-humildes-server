@@ -9,10 +9,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from .entity import Entity
+import datetime
+from app.db import Model as Base
 
 
-class Driver(Entity):
+class Driver(Base):
     __tablename__ = "drivers"
     id = Column(Integer, primary_key=True, autoincrement=True)
     first_name = Column(String(50), nullable=False)

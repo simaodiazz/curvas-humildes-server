@@ -4,6 +4,7 @@ from ....models.booking import Booking
 from ....services import bookings_service
 from .admin_routes import admin_blueprint, logger
 from ....cache import flaskCaching
+from flask_login import login_required
 
 
 def _serialize_booking_details(booking: Booking):
@@ -46,6 +47,7 @@ cache = flaskCaching
 
 @admin_blueprint.route("/admin/bookings", methods=["GET"])
 @cache.cached(timeout=60, key_prefix="admin_all_bookings")
+@login_required
 def admin_get_all_bookings_ep():
     try:
         all_bookings_orm = bookings_service.get_all_bookings()
@@ -56,6 +58,7 @@ def admin_get_all_bookings_ep():
 
 
 @admin_blueprint.route("/admin/bookings/<int:booking_id>", methods=["DELETE"])
+@login_required
 def admin_delete_booking_ep(booking_id):
     try:
         success = bookings_service.delete_booking_by_id(booking_id)
@@ -72,6 +75,7 @@ def admin_delete_booking_ep(booking_id):
 
 
 @admin_blueprint.route("/admin/bookings/<int:booking_id>/status", methods=["PATCH"])
+@login_required
 def admin_update_booking_status_ep(booking_id):
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
@@ -94,6 +98,7 @@ def admin_update_booking_status_ep(booking_id):
 
 
 @admin_blueprint.route("/admin/bookings/<int:booking_id>/assign", methods=["PATCH"])
+@login_required
 def admin_assign_driver_ep(booking_id):
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400

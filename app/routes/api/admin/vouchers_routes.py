@@ -3,6 +3,7 @@ from ....models.voucher import Voucher
 from ....services import vouchers_service
 from .admin_routes import admin_blueprint, logger
 from ....cache import flaskCaching
+from flask_login import login_required
 
 
 def _serialize_voucher_details(voucher: Voucher):
@@ -27,6 +28,7 @@ def _serialize_voucher_details(voucher: Voucher):
 
 
 @admin_blueprint.route("/admin/vouchers", methods=["POST"])
+@login_required
 def admin_create_voucher_ep():
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
@@ -50,6 +52,7 @@ def admin_create_voucher_ep():
 
 @admin_blueprint.route("/admin/vouchers", methods=["GET"])
 @flaskCaching.cached(timeout=60, key_prefix="admin_get_all_vouchers")
+@login_required
 def admin_get_all_vouchers_ep():
     try:
         all_vouchers_orm = vouchers_service.get_all_vouchers()
@@ -64,6 +67,7 @@ def admin_get_all_vouchers_ep():
     timeout=60,
     key_prefix=lambda: f"admin_get_voucher_{request.view_args['voucher_id']}",
 )
+@login_required
 def admin_get_voucher_ep(voucher_id):
     try:
         voucher = vouchers_service.get_voucher_by_id(voucher_id)
@@ -77,6 +81,7 @@ def admin_get_voucher_ep(voucher_id):
 
 
 @admin_blueprint.route("/admin/vouchers/<int:voucher_id>", methods=["PATCH"])
+@login_required
 def admin_update_voucher_ep(voucher_id):
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
@@ -108,6 +113,7 @@ def admin_update_voucher_ep(voucher_id):
 
 
 @admin_blueprint.route("/admin/vouchers/<int:voucher_id>", methods=["DELETE"])
+@login_required
 def admin_delete_voucher_ep(voucher_id):
     try:
         success = vouchers_service.delete_voucher(voucher_id)

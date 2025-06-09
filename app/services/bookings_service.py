@@ -1,7 +1,3 @@
-"""Serviço de reservas (booking) - funções para criar, alterar, consultar e excluir reservas.
-Inclui regras de negócio para disponibilidade de motoristas, aplicação de vouchers, orçamento,
-atribuição de motorista e envio de e-mail.
-"""
 import datetime
 from logging import getLogger
 from flask import current_app
@@ -18,18 +14,17 @@ from .vouchers_service import (
     record_voucher_usage,
     validate_voucher_for_use,
 )
-from ..cache import flaskCaching  # <-- USO CORRETO DO OBJETO CACHE
+from ..cache import flaskCaching
 
 logger = getLogger(__name__)
 
 
-@flaskCaching.memoize(timeout=120)  # <-- CACHING APLICADO NA FUNÇÃO DE DISPONIBILIDADE
+@flaskCaching.memoize(timeout=120)
 def check_availability(
     booking_date_obj: datetime.date,
     booking_time_obj: datetime.time,
     booking_duration_minutes: int,
 ) -> bool:
-    """Verifica disponibilidade de motoristas ativos para o horário solicitado de reserva."""
     try:
         tariff_settings = get_active_tariff_settings()
         if not tariff_settings:
@@ -105,7 +100,6 @@ def check_availability(
 
 
 def create_booking_record(booking_data: dict) -> Booking:
-    """Processa dados e cria registro de reserva no banco de dados."""
     try:
         passenger_name = booking_data["passengerName"]
         passenger_phone = booking_data.get("passengerPhone")
@@ -232,7 +226,6 @@ def create_booking_record(booking_data: dict) -> Booking:
 
 
 def update_booking_status(booking_id: int, new_status: str) -> "Booking | None":
-    """Atualiza status de uma reserva pelo ID."""
     allowed_statuses = current_app.config.get("ALLOWED_BOOKING_STATUSES", [])
     if new_status not in allowed_statuses:
         raise ValueError(
@@ -360,7 +353,6 @@ def assign_driver_to_booking(
 
 
 def get_all_bookings() -> list:
-    """Obtém todas as reservas ordenadas por data/hora (desc)."""
     try:
         return (
             sqlAlchemy.session.query(Booking)
@@ -379,7 +371,6 @@ def get_all_bookings() -> list:
 
 
 def delete_booking_by_id(booking_id: int) -> bool:
-    """Exclui a reserva pelo ID."""
     try:
         booking_to_delete = (
             sqlAlchemy.session.query(Booking).filter(Booking.id == booking_id).first()

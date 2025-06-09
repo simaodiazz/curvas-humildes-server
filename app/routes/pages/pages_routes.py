@@ -1,6 +1,8 @@
 from logging import getLogger
 
 from flask import Blueprint, render_template
+from flask_login import login_required
+
 
 pages_blueprint = Blueprint(
     name="pages",
@@ -13,6 +15,7 @@ logger = getLogger(__name__)
 
 
 @pages_blueprint.route("/")
+@login_required
 def pagina_de_reservas():
     """Serve a página do formulário de reservas como a página principal."""
     logger.info(
@@ -22,6 +25,7 @@ def pagina_de_reservas():
 
 
 @pages_blueprint.route("/admin")
+@login_required
 def painel_admin():
     """Serve a página de administração."""
     logger.info("A servir o painel de administração (admin.html).")

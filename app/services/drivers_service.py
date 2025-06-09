@@ -9,8 +9,6 @@ from ..cache import flaskCaching
 
 logger = getLogger(__name__)
 
-# --- Cache key helpers ---
-
 
 def make_driver_cache_key(driver_id):
     return f"driver:{driver_id}"
@@ -26,9 +24,6 @@ def make_vehicle_cache_key(vehicle_id):
 
 def make_all_vehicles_cache_key(status_filter):
     return f"vehicles:all:{status_filter or 'ANY'}"
-
-
-# --- CRUD Drivers ---
 
 
 def create_driver(driver_data: dict) -> Driver:

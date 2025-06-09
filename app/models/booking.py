@@ -12,10 +12,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from .entity import Entity
+import datetime
+from app.db import Model as Base
 
 
-class Booking(Entity):
+class Booking(Base):
     __tablename__ = "bookings"
     id = Column(Integer, primary_key=True, autoincrement=True)
     passenger_name = Column(String(100), nullable=False)
@@ -41,4 +42,5 @@ class Booking(Entity):
     assigned_driver = relationship("Driver", back_populates="bookings")
 
     def __repr__(self):
+        driver_name = self.assigned_driver.first_name if self.assigned_driver else "N/A"
         return f"<Booking(id={self.id}, name='{self.passenger_name}', date='{self.date}', total='{self.total_with_vat}')>"

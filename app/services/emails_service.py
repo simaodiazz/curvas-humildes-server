@@ -7,12 +7,11 @@ from ..cache import flaskCaching
 
 logger = logging.getLogger(__name__)
 
-_BOOKING_NOTIFY_CACHE_TIMEOUT = 300  # 5 min
+_BOOKING_NOTIFY_CACHE_TIMEOUT = 300
 _BOOKING_ASSIGNMENT_CACHE_TIMEOUT = 300
 
 
 def send_new_booking_notification_email(mail_instance, booking: Booking):
-    # Evita envio duplicado de notificação admin (caso chamada mais de 1x)
     cache_key = f"booking_notify_sent:{booking.id}"
     if flaskCaching.get(cache_key):
         logger.info(
@@ -57,7 +56,6 @@ def send_new_booking_notification_email(mail_instance, booking: Booking):
         logger.info(
             f"Email de notificação para admin enviado para {', '.join(admin_recipients)} para a reserva ID {booking.id}"
         )
-        # Marca como enviado no cache por 5 min
         flaskCaching.set(cache_key, True, timeout=_BOOKING_NOTIFY_CACHE_TIMEOUT)
     except Exception as e:
         logger.error(
@@ -67,7 +65,6 @@ def send_new_booking_notification_email(mail_instance, booking: Booking):
 
 
 def send_driver_assignment_email(mail_instance, driver: Driver, booking: Booking):
-    # Evita enviar mais de uma vez para o mesmo motorista para a mesma reserva em 5min
     cache_key = f"booking_driver_assignment_sent:{booking.id}:{driver.id}"
     if flaskCaching.get(cache_key):
         logger.info(
@@ -105,7 +102,6 @@ def send_driver_assignment_email(mail_instance, driver: Driver, booking: Booking
         logger.info(
             f"Email de atribuição de serviço enviado para {driver.email} (Motorista ID {driver.id}) para a reserva ID {booking.id}"
         )
-        # Marca como enviado no cache por 5 min
         flaskCaching.set(cache_key, True, timeout=_BOOKING_ASSIGNMENT_CACHE_TIMEOUT)
     except Exception as e:
         logger.error(

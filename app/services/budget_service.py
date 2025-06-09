@@ -1,6 +1,3 @@
-"""
-Serviço para cálculo de orçamento estimado de viagens
-"""
 import datetime
 import re
 from logging import getLogger
@@ -8,13 +5,12 @@ from typing import Optional
 import requests
 from flask import current_app
 from .tariff_settings_service import get_active_tariff_settings
-from ..cache import flaskCaching  # <--- IMPORTAÇÃO DO CACHE
+from ..cache import flaskCaching
 
 logger = getLogger(__name__)
 
 
 def _normalize_location_string(location_str: str) -> str:
-    """Normaliza string de local, removendo acentos e espaços extras."""
     if not location_str:
         return ""
     s = location_str.lower()
@@ -30,7 +26,6 @@ def _normalize_location_string(location_str: str) -> str:
 
 @flaskCaching.memoize(timeout=3600)  # <--- CACHE DE 1 HORA PARA CADA GEOCODE
 def _geocode_location_ors(location_name: str) -> Optional[tuple]:
-    """Geocodifica nome do local usando OpenRouteService (ORS)."""
     if not location_name:
         return None
     api_key = current_app.config.get("MAPS_API_KEY")
@@ -71,9 +66,6 @@ def _geocode_location_ors(location_name: str) -> Optional[tuple]:
 def _get_route_details_from_maps_api(
     pickup_location_name: str, dropoff_location_name: str
 ) -> dict:
-    """
-    Obtém detalhes de rota (distância e duração) usando o Maps API definido.
-    """
     if current_app.config.get("MAPS_API_PROVIDER") != "OPENROUTESERVICE":
         logger.warning("MAPS_API_PROVIDER não está configurado para OPENROUTESERVICE.")
         return {
@@ -158,17 +150,9 @@ def _get_route_details_from_maps_api(
         }
 
 
-# (Opcional) Se quiser, pode também cachear o cálculo do orçamento inteiro.
-# ATENÇÃO: Só faça isso se as tarifas não mudam toda hora,
-# senão, opte por cachear apenas o _get_route_details_from_maps_api/_geocode_location_ors.
-
-
 def calculate_estimated_budget(
     data: dict, request_time_obj: Optional[datetime.time] = None
 ) -> dict:
-    """
-    Calcula o orçamento estimado com base nas informações fornecidas.
-    """
     try:
         tariff_settings = get_active_tariff_settings()
         if not tariff_settings:
@@ -263,7 +247,7 @@ def calculate_estimated_budget(
     except ValueError as ve:
         logger.error("Erro de valor ao calcular orçamento: %s", ve)
         raise
-    except Exception as e_unexp:  # pylint: disable=broad-except
+    except Exception as e_unexp:
         logger.error(
             "Erro inesperado ao calcular orçamento: %s", e_unexp, exc_info=True
         )

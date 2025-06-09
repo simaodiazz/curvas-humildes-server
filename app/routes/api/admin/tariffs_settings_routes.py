@@ -3,12 +3,14 @@ from ....models.tariff_settings import TariffSettings
 from ....services import tariff_settings_service
 from .admin_routes import admin_blueprint, logger
 from ....cache import flaskCaching
+from flask_login import login_required
 
 
 @admin_blueprint.route("/admin/settings/tariffs", methods=["GET"])
 @flaskCaching.cached(
     timeout=60, key_prefix="admin_get_tariff_settings"
 )  # cache por 60s
+@login_required
 def admin_get_tariff_settings_ep():
     try:
         current_settings = tariff_settings_service.get_active_tariff_settings()
@@ -22,6 +24,7 @@ def admin_get_tariff_settings_ep():
 
 
 @admin_blueprint.route("/admin/settings/tariffs", methods=["PUT"])
+@login_required
 def admin_update_tariff_settings_ep():
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400

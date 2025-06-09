@@ -8,10 +8,11 @@ from sqlalchemy import (
     Integer,
 )
 
-from .entity import Entity
+import datetime
+from app.db import Model as Base
 
 
-class TariffSettings(Entity):
+class TariffSettings(Base):
     __tablename__ = "tariff_settings"
     id = Column(Integer, primary_key=True, default=1)
     base_rate_eur = Column(Float, nullable=False, default=10.0)
