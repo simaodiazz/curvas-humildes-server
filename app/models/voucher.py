@@ -1,8 +1,7 @@
-from sqlalchemy import Boolean, Column, Date, Float, Integer, String, DateTime
-
+from sqlalchemy import Boolean, Column, Date, Float, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 import datetime
-from app.db import Model as Base
-
+from ..db import Model as Base
 
 class Voucher(Base):
     __tablename__ = "vouchers"
@@ -20,6 +19,8 @@ class Voucher(Base):
     updated_at = Column(
         DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
     )
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    user = relationship('User', back_populates='vouchers')
 
     def __repr__(self):
         return f"<Voucher(id={self.id}, code='{self.code}', type='{self.discount_type}', active={self.is_active})>"

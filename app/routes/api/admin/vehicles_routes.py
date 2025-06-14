@@ -3,7 +3,8 @@ from ....models.vehicle import Vehicle
 from ....services import drivers_service
 from .admin_routes import admin_blueprint, logger
 from ....cache import flaskCaching
-from flask_login import login_required
+from ...authentication_routes import get_role
+from flask_jwt_extended import jwt_required
 
 
 def _serialize_vehicle_details(vehicle: Vehicle):
@@ -21,8 +22,10 @@ def _serialize_vehicle_details(vehicle: Vehicle):
 
 
 @admin_blueprint.route("/admin/vehicles", methods=["POST"])
-@login_required
+@jwt_required()
 def admin_create_vehicle_ep():
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
     data = request.get_json()
@@ -42,8 +45,10 @@ def admin_create_vehicle_ep():
 
 @admin_blueprint.route("/admin/vehicles", methods=["GET"])
 @flaskCaching.cached(timeout=60, key_prefix="admin_get_all_vehicles")
-@login_required
+@jwt_required()
 def admin_get_all_vehicles_ep():
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     status_filter = request.args.get("status", default=None, type=str)
     try:
         all_vehicles_orm = drivers_service.get_all_vehicles(status_filter=status_filter)
@@ -55,8 +60,10 @@ def admin_get_all_vehicles_ep():
 
 @admin_blueprint.route("/admin/vehicles/<int:vehicle_id>", methods=["GET"])
 @flaskCaching.cached(timeout=60, key_prefix="admin_get_vehicle")
-@login_required
+@jwt_required()
 def admin_get_vehicle_ep(vehicle_id):
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     try:
         vehicle = drivers_service.get_vehicle_by_id(vehicle_id)
         if vehicle:
@@ -69,8 +76,10 @@ def admin_get_vehicle_ep(vehicle_id):
 
 
 @admin_blueprint.route("/admin/vehicles/<int:vehicle_id>", methods=["PATCH"])
-@login_required
+@jwt_required()
 def admin_update_vehicle_ep(vehicle_id):
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
     data = request.get_json()
@@ -102,8 +111,10 @@ def admin_update_vehicle_ep(vehicle_id):
 
 
 @admin_blueprint.route("/admin/vehicles/<int:vehicle_id>", methods=["DELETE"])
-@login_required
+@jwt_required()
 def admin_delete_vehicle_ep(vehicle_id):
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     try:
         success = drivers_service.delete_vehicle_by_id(vehicle_id)
         # Limpa cache após exclusão, independente de existir ou não

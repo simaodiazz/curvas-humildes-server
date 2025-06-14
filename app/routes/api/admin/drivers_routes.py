@@ -4,7 +4,8 @@ from ....models.driver import Driver
 from ....services import drivers_service
 from .admin_routes import admin_blueprint, logger
 from ....cache import flaskCaching
-from flask_login import login_required
+from ...authentication_routes import get_role
+from flask_jwt_extended import jwt_required
 
 
 def _serialize_driver_details(driver: Driver):
@@ -20,8 +21,10 @@ def _serialize_driver_details(driver: Driver):
 
 
 @admin_blueprint.route("/admin/drivers", methods=["POST"])
-@login_required
+@jwt_required()
 def admin_create_driver_ep():
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
     data = request.get_json()
@@ -41,8 +44,10 @@ def admin_create_driver_ep():
 
 @admin_blueprint.route("/admin/drivers", methods=["GET"])
 @flaskCaching.memoize(timeout=60)
-@login_required
+@jwt_required()
 def admin_get_all_drivers_ep():
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     only_active_param = request.args.get("active", default=None, type=str)
     only_active = (
         only_active_param.lower() == "true" if only_active_param is not None else None
@@ -57,8 +62,10 @@ def admin_get_all_drivers_ep():
 
 @admin_blueprint.route("/admin/drivers/<int:driver_id>", methods=["GET"])
 @flaskCaching.memoize(timeout=60)
-@login_required
+@jwt_required()
 def admin_get_driver_ep(driver_id):
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     try:
         driver = drivers_service.get_driver_by_id(driver_id)
         if driver:
@@ -71,8 +78,10 @@ def admin_get_driver_ep(driver_id):
 
 
 @admin_blueprint.route("/admin/drivers/<int:driver_id>", methods=["PATCH"])
-@login_required
+@jwt_required()
 def admin_update_driver_ep(driver_id):
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
     data = request.get_json()
@@ -95,8 +104,10 @@ def admin_update_driver_ep(driver_id):
 
 
 @admin_blueprint.route("/admin/drivers/<int:driver_id>", methods=["DELETE"])
-@login_required
+@jwt_required()
 def admin_delete_driver_ep(driver_id):
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     try:
         success = drivers_service.delete_driver_by_id(driver_id)
         if success:

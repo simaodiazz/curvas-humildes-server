@@ -1,7 +1,6 @@
 from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
-import os
 
 sqlAlchemy = SQLAlchemy()
 Model = sqlAlchemy.Model
@@ -22,11 +21,13 @@ def init_db_engine_with_context(app_instance):
         user = User()
         user.name = name
         user.set_password(app_instance.config.get("ADMINSTRATOR_PASSWORD"))
+        user.email = app_instance.config.get("ADMINSTRATOR_EMAIL")
+        user.phone_number = app_instance.config.get("ADMINSTRATOR_PHONE_NUMBER")
         user.role = "admin"
         sqlAlchemy.session.add(user)
         sqlAlchemy.session.commit()
         app_instance.logger.info(f"User `{user.name}` created.")
-    
+
     try:
         sqlAlchemy.create_all()
 

@@ -1,5 +1,4 @@
 import datetime
-
 from sqlalchemy import (
     Column,
     Date,
@@ -11,10 +10,8 @@ from sqlalchemy import (
     Time,
 )
 from sqlalchemy.orm import relationship
-
 import datetime
 from app.db import Model as Base
-
 
 class Booking(Base):
     __tablename__ = "bookings"
@@ -40,7 +37,6 @@ class Booking(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     assigned_driver_id = Column(Integer, ForeignKey("drivers.id"), nullable=True)
     assigned_driver = relationship("Driver", back_populates="bookings")
-
     def __repr__(self):
         driver_name = self.assigned_driver.first_name if self.assigned_driver else "N/A"
         return f"<Booking(id={self.id}, name='{self.passenger_name}', date='{self.date}', total='{self.total_with_vat}')>"

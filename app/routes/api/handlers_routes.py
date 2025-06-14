@@ -4,26 +4,24 @@ from logging import getLogger
 from flask import Blueprint, current_app, jsonify, request
 
 from app.routes.main_routes import logger
-from flask_login import login_required
-
+from ..authentication_routes import get_role
+from flask_jwt_extended import jwt_required
 
 from ...services import bookings_service, budget_service, vouchers_service
 
 handlers_blueprint = Blueprint(
     name="handlers",
     import_name=__name__,
-    template_folder="pages/templates",
-    static_folder="pages/static",
 )
 
 logger = getLogger(__name__)
 
 
 @handlers_blueprint.route("/calculate-budget", methods=["POST"])
-@login_required
 def handle_calculate_budget():
     if not request.is_json:
         return jsonify({"error": "O pedido deve ser em formato JSON"}), 400
+
     data = request.get_json()
     logger.info(f"Dados recebidos para /calculate-budget: {data}")
 
@@ -78,7 +76,6 @@ def handle_calculate_budget():
 
 
 @handlers_blueprint.route("/validate-voucher", methods=["POST"])
-@login_required
 def handle_validate_voucher():
     if not request.is_json:
         return jsonify({"error": "O pedido deve ser em formato JSON"}), 400
@@ -146,7 +143,6 @@ def handle_validate_voucher():
 
 
 @handlers_blueprint.route("/submit-booking", methods=["POST"])
-@login_required
 def handle_submit_booking():
     if not request.is_json:
         return jsonify({"error": "O pedido deve ser em formato JSON"}), 400

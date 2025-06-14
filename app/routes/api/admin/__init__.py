@@ -4,5 +4,5 @@ from . import (
     tariffs_settings_routes,
     vehicles_routes,
     vouchers_routes,
-    admin_routes,
+    user_routes
 )

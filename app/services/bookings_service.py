@@ -15,9 +15,7 @@ from .vouchers_service import (
     validate_voucher_for_use,
 )
 from ..cache import flaskCaching
-
 logger = getLogger(__name__)
-
 
 @flaskCaching.memoize(timeout=120)
 def check_availability(
@@ -97,7 +95,6 @@ def check_availability(
             "Erro inesperado ao verificar disponibilidade: %s", e_unexp, exc_info=True
         )
         raise ValueError("Erro inesperado ao verificar disponibilidade.") from e_unexp
-
 
 def create_booking_record(booking_data: dict) -> Booking:
     try:
@@ -224,7 +221,6 @@ def create_booking_record(booking_data: dict) -> Booking:
         logger.error("Erro inesperado ao criar reserva: %s", e_unexp, exc_info=True)
         raise ValueError("Erro interno inesperado ao criar a reserva.") from e_unexp
 
-
 def update_booking_status(booking_id: int, new_status: str) -> "Booking | None":
     allowed_statuses = current_app.config.get("ALLOWED_BOOKING_STATUSES", [])
     if new_status not in allowed_statuses:
@@ -266,7 +262,6 @@ def update_booking_status(booking_id: int, new_status: str) -> "Booking | None":
             exc_info=True,
         )
         raise ValueError("Erro inesperado ao atualizar status da reserva.") from e_unexp
-
 
 def assign_driver_to_booking(
     booking_id: int, driver_id: "int | None"
@@ -351,7 +346,6 @@ def assign_driver_to_booking(
         )
         raise ValueError("Erro inesperado ao atribuir motorista.") from e_unexp
 
-
 def get_all_bookings() -> list:
     try:
         return (
@@ -368,7 +362,6 @@ def get_all_bookings() -> list:
             "Erro inesperado ao obter todas as reservas: %s", e_unexp, exc_info=True
         )
         raise ValueError("Erro inesperado ao obter todas as reservas.") from e_unexp
-
 
 def delete_booking_by_id(booking_id: int) -> bool:
     try:

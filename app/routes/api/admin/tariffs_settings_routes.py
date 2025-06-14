@@ -3,15 +3,18 @@ from ....models.tariff_settings import TariffSettings
 from ....services import tariff_settings_service
 from .admin_routes import admin_blueprint, logger
 from ....cache import flaskCaching
-from flask_login import login_required
+from ...authentication_routes import get_role
+from flask_jwt_extended import jwt_required
 
 
 @admin_blueprint.route("/admin/settings/tariffs", methods=["GET"])
 @flaskCaching.cached(
     timeout=60, key_prefix="admin_get_tariff_settings"
 )  # cache por 60s
-@login_required
+@jwt_required()
 def admin_get_tariff_settings_ep():
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     try:
         current_settings = tariff_settings_service.get_active_tariff_settings()
         return jsonify(_serialize_tariff_settings_details(current_settings)), 200
@@ -24,8 +27,10 @@ def admin_get_tariff_settings_ep():
 
 
 @admin_blueprint.route("/admin/settings/tariffs", methods=["PUT"])
-@login_required
+@jwt_required()
 def admin_update_tariff_settings_ep():
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
     data = request.get_json()

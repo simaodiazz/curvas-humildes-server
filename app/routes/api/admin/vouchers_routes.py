@@ -3,13 +3,13 @@ from ....models.voucher import Voucher
 from ....services import vouchers_service
 from .admin_routes import admin_blueprint, logger
 from ....cache import flaskCaching
-from flask_login import login_required
-
+from ...authentication_routes import get_role
+from flask_jwt_extended import jwt_required
 
 def _serialize_voucher_details(voucher: Voucher):
     if not voucher:
         return None
-    return {
+    result = {
         "id": voucher.id,
         "code": voucher.code,
         "description": voucher.description,
@@ -24,12 +24,22 @@ def _serialize_voucher_details(voucher: Voucher):
         "is_active": voucher.is_active,
         "created_at": voucher.created_at.isoformat() if voucher.created_at else None,
         "updated_at": voucher.updated_at.isoformat() if voucher.updated_at else None,
+        "user_id": voucher.user_id
     }
-
+    # serializar partner ou user se existir (opcional)
+    if hasattr(voucher, "user") and voucher.user is not None:
+        result["user"] = {
+            "id": voucher.user.id,
+            "name": voucher.user.name,
+            "email": voucher.user.email
+        }
+    return result
 
 @admin_blueprint.route("/admin/vouchers", methods=["POST"])
-@login_required
+@jwt_required()
 def admin_create_voucher_ep():
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
     data = request.get_json()
@@ -49,11 +59,12 @@ def admin_create_voucher_ep():
         logger.error(f"Admin: Erro criar voucher: {e}", exc_info=True)
         return jsonify({"error": "Erro interno."}), 500
 
-
 @admin_blueprint.route("/admin/vouchers", methods=["GET"])
 @flaskCaching.cached(timeout=60, key_prefix="admin_get_all_vouchers")
-@login_required
+@jwt_required()
 def admin_get_all_vouchers_ep():
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     try:
         all_vouchers_orm = vouchers_service.get_all_vouchers()
         return jsonify([_serialize_voucher_details(v) for v in all_vouchers_orm]), 200
@@ -61,14 +72,15 @@ def admin_get_all_vouchers_ep():
         logger.error(f"Admin: Erro obter vouchers: {e}", exc_info=True)
         return jsonify({"error": "Erro interno."}), 500
 
-
 @admin_blueprint.route("/admin/vouchers/<int:voucher_id>", methods=["GET"])
 @flaskCaching.cached(
     timeout=60,
     key_prefix=lambda: f"admin_get_voucher_{request.view_args['voucher_id']}",
 )
-@login_required
+@jwt_required()
 def admin_get_voucher_ep(voucher_id):
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     try:
         voucher = vouchers_service.get_voucher_by_id(voucher_id)
         if voucher:
@@ -79,10 +91,11 @@ def admin_get_voucher_ep(voucher_id):
         logger.error(f"Admin: Erro obter voucher {voucher_id}: {e}", exc_info=True)
         return jsonify({"error": "Erro interno."}), 500
 
-
-@admin_blueprint.route("/admin/vouchers/<int:voucher_id>", methods=["PATCH"])
-@login_required
+@admin_blueprint.route("/admin/vouchers/<int:voucher_id>", methods=["PATCH", "PUT"])
+@jwt_required()
 def admin_update_voucher_ep(voucher_id):
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     if not request.is_json:
         return jsonify({"error": "Pedido deve ser JSON"}), 400
     data = request.get_json()
@@ -111,10 +124,11 @@ def admin_update_voucher_ep(voucher_id):
         logger.error(f"Admin: Erro update voucher {voucher_id}: {e}", exc_info=True)
         return jsonify({"error": "Erro interno."}), 500
 
-
 @admin_blueprint.route("/admin/vouchers/<int:voucher_id>", methods=["DELETE"])
-@login_required
+@jwt_required()
 def admin_delete_voucher_ep(voucher_id):
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
     try:
         success = vouchers_service.delete_voucher(voucher_id)
         flaskCaching.delete("admin_get_all_vouchers")
@@ -127,4 +141,16 @@ def admin_delete_voucher_ep(voucher_id):
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
         logger.error(f"Admin: Erro excluir voucher {voucher_id}: {e}", exc_info=True)
+        return jsonify({"error": "Erro interno."}), 500
+
+@admin_blueprint.route("/admin/vouchers/with_user", methods=["GET"])
+@jwt_required()
+def admin_get_all_vouchers_with_user_ep():
+    if get_role() != "admin":
+        return jsonify({"error": "Acesso negado."}), 403
+    try:
+        vouchers_with_user = vouchers_service.get_all_vouchers_with_user()
+        return jsonify([_serialize_voucher_details(v) for v in vouchers_with_user]), 200
+    except Exception as e:
+        logger.error(f"Admin: Erro obter vouchers com user associado: {e}", exc_info=True)
         return jsonify({"error": "Erro interno."}), 500

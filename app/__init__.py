@@ -2,10 +2,9 @@
 import logging
 import os
 
-from flask import Flask
+from flask import Flask, make_response
 from flask_cors import CORS
 from flask_mail import Mail
-from flask_login import LoginManager
 from flask_jwt_extended import JWTManager
 
 from .db import init_db_engine_with_context, sqlAlchemy
@@ -15,8 +14,8 @@ app = Flask(__name__, instance_relative_config=True)
 
 cors = CORS()
 mail = Mail()
-login_manager = LoginManager()
 jwt = JWTManager()
+
 
 def create_app(config_object_name="config"):
     """
@@ -47,7 +46,6 @@ def create_app(config_object_name="config"):
     mail.init_app(app)
     sqlAlchemy.init_app(app)
     flaskCaching.init_app(app)
-    login_manager.init_app(app)
     jwt.init_app(app)
 
     from .routes.api.admin.admin_routes import admin_blueprint
@@ -58,8 +56,8 @@ def create_app(config_object_name="config"):
     with app.app_context():
         app.register_blueprint(main_blueprint)
         app.register_blueprint(pages_blueprint)
-        app.register_blueprint(handlers_blueprint)
         app.register_blueprint(admin_blueprint)
+        app.register_blueprint(handlers_blueprint)
 
         try:
             app.logger.info(
@@ -78,30 +76,35 @@ def create_app(config_object_name="config"):
     app.logger.info("Aplicação criada e configurada com sucesso.")
     return app
 
-@login_manager.user_loader
-def load_user(user_id):
-    from .models.user import User
-    return User.query.get(int(user_id))
+
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    response = make_response('', 401)  # Corpo vazio, apenas status 401
+    response.delete_cookie(app.config.get('JWT_ACCESS_COOKIE_NAME'))  # Nome do teu cookie
+    return response
 
 
-PUBLIC_ENDPOINTS = ['main']
+PUBLIC_ENDPOINTS = ["/login", "/login/", "/api/login", "/api/login/"]
 
-PUBLIC_ENDPOINTS = ['/login', '/login/']  # Adicione ambos
 
 @app.before_request
 def require_jwt_for_all_requests():
     from flask import request
-    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, exceptions as jwt_exceptions
+    from flask_jwt_extended import (
+        verify_jwt_in_request,
+        get_jwt_identity,
+        exceptions as jwt_exceptions,
+    )
     from .models.user import User
 
     # Tira a barra final se tiver, para padronizar
-    path = request.path.rstrip('/')
+    path = request.path.rstrip("/")
 
-    if path in (p.rstrip('/') for p in PUBLIC_ENDPOINTS):
+    if path in (p.rstrip("/") for p in PUBLIC_ENDPOINTS):
         return
 
     # Arquivos estáticos, favicon, etc
-    if request.path.startswith('/static/'):
+    if request.path.startswith("/static/"):
         return
 
     # Exige JWT!
@@ -110,8 +113,8 @@ def require_jwt_for_all_requests():
         user_id = get_jwt_identity()
         user = User.query.filter_by(id=user_id).first()
         if not user:
-            return {'msg': 'Token inválido'}, 401
+            return {"msg": "Token inválido"}, 401
     except jwt_exceptions.NoAuthorizationError:
-        return {'msg': 'Token de autenticação ausente'}, 401
+        return {"msg": "Token de autenticação ausente"}, 401
     except jwt_exceptions.JWTDecodeError:
-        return {'msg': 'Token inválido'}, 401
+        return {"msg": "Token inválido"}, 401
