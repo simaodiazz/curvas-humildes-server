@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Admin - Reservas, Motoristas, Veículos, Tarifas e Vouchers</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f0f1f5; }
+    th, td { white-space: nowrap; }
+  </style>
+</head>
+<body class="p-4">
+  <!-- Botão logout -->
+  <div class="max-w-screen-xl mx-auto flex items-center justify-end mb-6">
+    <button
+      id="logoutBtn"
+      class="flex items-center px-4 py-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:scale-105 hover:shadow-lg transition text-white rounded-lg shadow-md font-semibold text-sm gap-2"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Terminar Sessão
+    </button>
+  </div>
+  <div class="max-w-screen-xl mx-auto space-y-10">
+
+    <!-- Gestão de Reservas -->
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+          <!-- Ícone Reservas -->
+          <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Gestão de Reservas
+        </h1>
+        <button id="refreshBookingsBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+          Atualizar Lista
+        </button>
+      </div>
+      <div id="adminBookingMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <div id="loadingBookingsIndicator" class="hidden flex justify-center py-4">
+        <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Passageiro</th>
+              <th class="p-3 font-bold">Telefone</th>
+              <th class="p-3 font-bold">Data</th>
+              <th class="p-3 font-bold">Hora</th>
+              <th class="p-3 font-bold">Duração</th>
+              <th class="p-3 font-bold">Partida</th>
+              <th class="p-3 font-bold">Destino</th>
+              <th class="p-3 font-bold">Pass.</th>
+              <th class="p-3 font-bold">Malas</th>
+              <th class="p-3 font-bold">Preço (€)</th>
+              <th class="p-3 font-bold">Voucher</th>
+              <th class="p-3 font-bold">Status</th>
+              <th class="p-3 font-bold">Motorista</th>
+              <th class="p-3 font-bold">Utilizador ID</th>
+              <th class="p-3 font-bold">Criado Em</th>
+              <th class="p-3 font-bold">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="bookingsTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <div id="noBookingsMessage" class="hidden text-center text-gray-400 py-6">Nenhuma reserva encontrada.</div>
+    </section>
+
+    <!-- Gestão de Motoristas -->
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+          <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 12c2.25 0 4.09-1.84 4.09-4.09 0-2.24-1.84-4.08-4.09-4.08s-4.08 1.84-4.08 4.08c0 2.25 1.83 4.09 4.08 4.09zm0 2.54c-2.67 0-8 1.34-8 4.01V22h16v-3.45c0-2.67-5.33-4.01-8-4.01z"/></svg>
+          Gestão de Motoristas
+        </h1>
+        <button id="refreshDriversBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Atualizar Lista
+        </button>
+      </div>
+      <div id="adminDriverMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <form id="addDriverForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white bg-opacity-80 p-4 rounded-xl shadow mb-6">
+        <input type="text" id="first_name" name="first_name" placeholder="Nome Próprio" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="text" id="last_name" name="last_name" placeholder="Apelido" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring pb-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="email" id="email" name="email" placeholder="Email" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="tel" id="phone_number" name="phone_number" placeholder="Telefone" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <div class="col-span-full flex items-center gap-2 ml-1">
+          <input id="newDriverIsActive" name="is_active" type="checkbox" checked class="accent-indigo-600 w-5 h-5">
+          <label for="newDriverIsActive" class="text-sm text-gray-700">Ativo</label>
+        </div>
+        <button type="submit" class="col-span-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 hover:scale-105 text-white rounded-xl shadow-lg text-sm font-bold transition">
+          + Adicionar Motorista
+        </button>
+      </form>
+      <div id="loadingDriversIndicator" class="hidden flex justify-center mb-3">
+        <div class="w-10 h-10 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Nome Próprio</th>
+              <th class="p-3 font-bold">Apelido</th>
+              <th class="p-3 font-bold">Email</th>
+              <th class="p-3 font-bold">Telefone</th>
+              <th class="p-3 font-bold">Status</th>
+              <th class="p-3 font-bold">Criado Em</th>
+              <th class="p-3 font-bold">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="driversTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <div id="noDriversMessage" class="hidden text-center text-gray-400 py-6">Nenhum motorista encontrado.</div>
+    </section>
+
+    <!-- Gestão de Frota (Veículos) -->
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+          <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 13V10a8 8 0 0116 0v3"/><rect x="7" y="13" width="10" height="5" rx="2" /><circle cx="12" cy="16" r="1" /></svg>
+          Gestão de Frota (Veículos)
+        </h1>
+        <button id="refreshVehiclesBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Atualizar Lista
+        </button>
+      </div>
+      <div id="adminVehicleMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <form id="addVehicleForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white bg-opacity-80 p-4 rounded-xl shadow mb-6">
+        <input type="text" id="newVehicleLicensePlate" name="license_plate" placeholder="Matrícula" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="text" id="newVehicleMake" name="make" placeholder="Marca" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="text" id="newVehicleModel" name="model" placeholder="Modelo" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="number" id="newVehicleYear" name="year" placeholder="Ano" min="1980" max="2099" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="number" id="newVehicleCapacityPassengers" name="capacity_passengers" placeholder="Capac. Passageiros" min="1" value="4" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="number" id="newVehicleCapacityBags" name="capacity_bags" placeholder="Capac. Malas" min="0" value="3" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <select id="newVehicleStatus" name="status" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+          <option value="ACTIVE" selected>Ativo</option>
+          <option value="MAINTENANCE">Manutenção</option>
+          <option value="INACTIVE">Inativo</option>
+        </select>
+        <div></div>
+        <button type="submit" class="col-span-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 hover:scale-105 text-white rounded-xl shadow-lg text-sm font-bold transition">
+          + Adicionar Veículo
+        </button>
+      </form>
+      <div id="loadingVehiclesIndicator" class="hidden flex justify-center mb-3">
+        <div class="w-10 h-10 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Matrícula</th>
+              <th class="p-3 font-bold">Marca</th>
+              <th class="p-3 font-bold">Modelo</th>
+              <th class="p-3 font-bold">Ano</th>
+              <th class="p-3 font-bold">Cap. Pass.</th>
+              <th class="p-3 font-bold">Cap. Malas</th>
+              <th class="p-3 font-bold">Status</th>
+              <th class="p-3 font-bold">Criado Em</th>
+              <th class="p-3 font-bold">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="vehiclesTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <div id="noVehiclesMessage" class="hidden text-center text-gray-400 py-6">Nenhum veículo encontrado.</div>
+    </section>
+
+    <!-- Gestão de Tarifas -->
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+          <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10v10a1 1 0 001 1h16a1 1 0 001-1V10"/><path d="M16 2H8a1 1 0 00-1 1v5a1 1 0 001 1h8a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>
+          Gestão de Tarifas
+        </h1>
+        <button id="refreshTariffsBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Recarregar Tarifas
+        </button>
+      </div>
+      <div id="adminTariffMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <div id="loadingTariffsIndicator" class="hidden flex justify-center py-4">
+        <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      </div>
+      <form id="updateTariffForm" class="grid gap-5 bg-white bg-opacity-80 p-4 rounded-xl shadow">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input type="number" id="base_rate_eur" placeholder="Tarifa Base (€)" step="0.01" min="0" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+          <input type="number" id="rate_per_km_eur" placeholder="Tarifa por Km (€)" step="0.01" min="0" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+          <input type="number" id="rate_per_passenger_eur" placeholder="Por Passageiro Extra (€)" step="0.01" min="0" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+          <input type="number" id="rate_per_bag_eur" placeholder="Por Mala (€)" step="0.01" min="0" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center pt-2 border-t">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="night_surcharge_applies" class="accent-indigo-600 w-5 h-5">
+            <label for="night_surcharge_applies" class="text-sm text-gray-600">Aplicar Sobretaxa Noturna</label>
+          </div>
+          <input type="number" id="night_surcharge_percentage" placeholder="Percentagem (%)" step="0.1" min="0" max="100" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+          <div class="flex gap-2">
+            <input type="number" id="night_surcharge_start_hour" placeholder="Início (0-23)" min="0" max="23" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm w-1/2">
+            <input type="number" id="night_surcharge_end_hour" placeholder="Fim (0-23)" min="0" max="23" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm w-1/2">
+          </div>
+        </div>
+        <div>
+          <input type="number" id="booking_slot_overlap_minutes" placeholder="Margem Sobreposição Reservas (min)" min="0" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm w-60">
+        </div>
+        <div>
+          <button type="submit" class="px-6 py-2 bg-gradient-to-r from-green-500 to-green-700 hover:scale-105 text-white rounded-xl shadow-lg text-sm font-bold transition">Guardar Alterações</button>
+          <span class="text-xs text-gray-400 ml-4">Última atualização: <span id="tariffsUpdatedAt">N/A</span></span>
+        </div>
+      </form>
+    </section>
+
+    <!-- Gestão de Vouchers -->
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+          <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8 12h8" /></svg>
+          Gestão de Vouchers
+        </h1>
+        <button id="refreshVouchersBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+          Atualizar Lista
+        </button>
+      </div>
+      <div id="adminVoucherMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <form id="addVoucherForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white bg-opacity-80 p-4 rounded-xl shadow mb-6">
+        <input
+            type="text"
+            id="newVoucherCode"
+            name="code"
+            placeholder="Código"
+            required
+            class="px-4 py-2 border-2 border-gray-200 rounded-xl uppercase focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm"
+        >
+        <input
+            type="text"
+            id="newVoucherDescription"
+            name="description"
+            placeholder="Descrição"
+            class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm"
+        >
+        <select
+            id="newVoucherDiscountType"
+            name="discount_type"
+            class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm"
+        >
+            <option value="PERCENTAGE" selected>Percentagem (%)</option>
+            <option value="FIXED_AMOUNT">Valor Fixo (€)</option>
+        </select>
+        <input
+            type="number"
+            id="newVoucherDiscountValue"
+            name="discount_value"
+            placeholder="Valor Desconto"
+            step="0.01"
+            min="0.01"
+            required
+            class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm"
+        >
+        <input
+            type="date"
+            id="newVoucherExpirationDate"
+            name="expiration_date"
+            class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm"
+        >
+        <input
+            type="number"
+            id="newVoucherMaxUses"
+            name="max_uses"
+            placeholder="Máximo de Usos"
+            min="0"
+            value="1"
+            required
+            class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm"
+        >
+        <input
+            type="number"
+            id="newVoucherMinBookingValue"
+            name="min_booking_value"
+            placeholder="Valor Mín Reserva (€)"
+            step="0.01"
+            min="0"
+            class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm"
+        >
+        <select
+            id="newVoucherUserId"
+            name="user_id"
+            class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm"
+        >
+            <option value="">Não associar a utilizador</option>
+        </select>
+        <div class="col-span-full flex items-center gap-2 ml-1">
+            <input
+            id="newVoucherIsActive"
+            name="is_active"
+            type="checkbox"
+            checked
+            class="accent-indigo-600 w-5 h-5"
+            >
+            <label for="newVoucherIsActive" class="text-sm text-gray-700">Ativo</label>
+        </div>
+        <button
+            type="submit"
+            class="col-span-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 hover:scale-105 text-white rounded-xl shadow-lg text-sm font-bold transition"
+        >
+            + Adicionar Voucher
+        </button>
+      </form>
+      <div id="loadingVouchersIndicator" class="hidden flex justify-center mb-3">
+        <div class="w-10 h-10 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Código</th>
+              <th class="p-3 font-bold">Descrição</th>
+              <th class="p-3 font-bold">Tipo</th>
+              <th class="p-3 font-bold">Valor</th>
+              <th class="p-3 font-bold">Mín. Reserva</th>
+              <th class="p-3 font-bold">Parceiro</th>
+              <th class="p-3 font-bold">Validade</th>
+              <th class="p-3 font-bold">Usos</th>
+              <th class="p-3 font-bold">Status</th>
+              <th class="p-3 font-bold">Criado Em</th>
+              <th class="p-3 font-bold">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="vouchersTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <div id="noVouchersMessage" class="hidden text-center text-gray-400 py-6">Nenhum voucher encontrado.</div>
+    </section>
+
+    <!-- Gestão de Utilizadores -->
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+          <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4" /><path d="M2 21v-2a4 4 0 014-4h12a4 4 0 014 4v2" /></svg>
+          Gestão de Utilizadores
+        </h1>
+        <button id="refreshUsersBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Atualizar Lista
+        </button>
+      </div>
+      <div id="adminUserMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <form id="addUserForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white bg-opacity-80 p-4 rounded-xl shadow mb-6">
+        <input type="text" id="newUserName" name="name" placeholder="Nome" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="email" id="newUserEmail" name="email" placeholder="Email" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="text" id="newUserPhone" name="phone_number" placeholder="Telefone" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <select id="newUserRole" name="role" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+          <option value="partner" selected>Partner</option>
+          <option value="admin">Administrador</option>
+        </select>
+        <input type="password" name="password" id="newUserPassword" placeholder="Palavra-passe" required minlength="6" class="col-span-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <button type="submit" class="col-span-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 hover:scale-105 text-white rounded-xl shadow-lg text-sm font-bold transition">
+          + Adicionar Utilizador
+        </button>
+      </form>
+      <div id="loadingUsersIndicator" class="hidden flex justify-center mb-3">
+        <div class="w-10 h-10 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Nome</th>
+              <th class="p-3 font-bold">Email</th>
+              <th class="p-3 font-bold">Telefone</th>
+              <th class="p-3 font-bold">Perfil</th>
+              <th class="p-3 font-bold">Criado Em</th>
+              <th class="p-3 font-bold">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <div id="noUsersMessage" class="hidden text-center text-gray-400 py-6">Nenhum utilizador encontrado.</div>
+    </section>
+
+    <!-- Vouchers de Parceiros -->
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+          <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4"></rect></svg>
+          Metas dos Vouchers dos Parceiros
+        </h1>
+        <button id="refreshPartnerVouchersBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Atualizar Lista
+        </button>
+      </div>
+      <div id="adminPartnerVoucherMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <div id="loadingPartnerVouchersIndicator" class="hidden flex justify-center mb-3">
+        <div class="w-10 h-10 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Código</th>
+              <th class="p-3 font-bold">Parceiro</th>
+              <th class="p-3 font-bold">Descrição</th>
+              <th class="p-3 font-bold">Tipo</th>
+              <th class="p-3 font-bold">Valor</th>
+              <th class="p-3 font-bold">Usos</th>
+              <th class="p-3 font-bold">Meta</th>
+              <th class="p-3 font-bold">Status</th>
+              <th class="p-3 font-bold">Criado Em</th>
+            </tr>
+          </thead>
+          <tbody id="partnerVouchersTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <div id="noPartnerVouchersMessage" class="hidden text-center text-gray-400 py-6">Nenhum voucher de parceiro encontrado.</div>
+    </section>
+
+    <script>
+        const API_BASE_URL = '';
+        const bookingsTableBody = document.getElementById('bookingsTableBody');
+        const adminBookingMessage = document.getElementById('adminBookingMessage');
+        const refreshBookingsBtn = document.getElementById('refreshBookingsBtn');
+        const loadingBookingsIndicator = document.getElementById('loadingBookingsIndicator');
+        const noBookingsMessage = document.getElementById('noBookingsMessage');
+
+        const driversTableBody = document.getElementById('driversTableBody');
+        const adminDriverMessage = document.getElementById('adminDriverMessage');
+        const refreshDriversBtn = document.getElementById('refreshDriversBtn');
+        const loadingDriversIndicator = document.getElementById('loadingDriversIndicator');
+        const noDriversMessage = document.getElementById('noDriversMessage');
+        const addDriverForm = document.getElementById('addDriverForm');
+
+        const vehiclesTableBody = document.getElementById('vehiclesTableBody');
+        const adminVehicleMessage = document.getElementById('adminVehicleMessage');
+        const refreshVehiclesBtn = document.getElementById('refreshVehiclesBtn');
+        const loadingVehiclesIndicator = document.getElementById('loadingVehiclesIndicator');
+        const noVehiclesMessage = document.getElementById('noVehiclesMessage');
+        const addVehicleForm = document.getElementById('addVehicleForm');
+
+        const adminTariffMessage = document.getElementById('adminTariffMessage');
+        const loadingTariffsIndicator = document.getElementById('loadingTariffsIndicator');
+        const updateTariffForm = document.getElementById('updateTariffForm');
+        const refreshTariffsBtn = document.getElementById('refreshTariffsBtn');
+        const tariffsUpdatedAt = document.getElementById('tariffsUpdatedAt');
+
+        const adminVoucherMessage = document.getElementById('adminVoucherMessage');
+        const loadingVouchersIndicator = document.getElementById('loadingVouchersIndicator');
+        const addVoucherForm = document.getElementById('addVoucherForm');
+        const vouchersTableBody = document.getElementById('vouchersTableBody');
+        const noVouchersMessage = document.getElementById('noVouchersMessage');
+        const refreshVouchersBtn = document.getElementById('refreshVouchersBtn');
+
+        const ALLOWED_BOOKING_STATUSES = [ 'PENDING_CONFIRMATION', 'CONFIRMED', 'DRIVER_ASSIGNED', 'ON_ROUTE_PICKUP', 'PASSENGER_ON_BOARD', 'COMPLETED', 'CANCELED_BY_CLIENT', 'CANCELED_BY_ADMIN', 'NO_SHOW'];
+        const ALLOWED_VEHICLE_STATUSES = ['ACTIVE', 'MAINTENANCE', 'INACTIVE'];
+        let activeDriversList = [];
+
+        function showAdminMessage(element, message, type = 'success') {
+             if (!element) { console.error("Elemento msg nulo:", message); return; }
+            element.textContent = message; element.className = `message-box message-${type}`; element.style.display = 'block';
+            setTimeout(() => { if (element) element.style.display = 'none'; }, 5000);
+        }
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A'; try { return new Date(dateString).toLocaleDateString('pt-PT'); } catch (e) { return 'Inválida'; }
+        }
+        function formatDateTime(dateString) {
+             if (!dateString) return 'N/A'; try { return new Date(dateString).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'}); } catch (e) { return 'Inválida'; }
+        }
+        function formatCurrency(value) {
+            if (value === null || value === undefined) return '-';
+            try { return value.toFixed(2); } catch(e) { return 'Inv.'; }
+        }
+
+        /**
+         * Fetches the list of users and populates the select element with ID 'newVoucherUserId'
+         * with options for each user. The first option is always 'Não associar a utilizador'.
+         * If the element is not found or the fetch fails, does nothing.
+         */
+        async function populateVoucherUserSelect() {
+            try {
+                const select = document.getElementById('newVoucherUserId');
+                if (!select) return;
+                select.innerHTML = `<option value="">Não associar a utilizador</option>`;
+                const response = await fetch(`${API_BASE_URL}/admin/users`);
+                if (!response.ok) return;
+                const users = await response.json();
+                users.forEach(user => {
+                const opt = document.createElement('option');
+                opt.value = user.id;
+                opt.textContent = `${user.name} (${user.email})`;
+                select.appendChild(opt);
+                });
+            } catch(e) { }
+        }
+
+        async function fetchAndDisplayBookings() {
+            loadingBookingsIndicator.style.display = 'block';
+            bookingsTableBody.innerHTML = '';
+            noBookingsMessage.style.display = 'none';
+            try {
+                if (activeDriversList.length === 0) { await fetchActiveDrivers(); }
+                const response = await fetch(`${API_BASE_URL}/admin/bookings`);
+                if (!response.ok) throw new Error(`Erro ${response.status} ao obter reservas`);
+                const bookings = await response.json();
+                if (bookings.length === 0) {
+                    noBookingsMessage.style.display = 'block';
+                } else {
+                    bookings.forEach(booking => {
+                        const row = bookingsTableBody.insertRow();
+
+                        // 1. Campos editáveis inline
+                        makeEditableCell(row, "passenger_name", booking.passenger_name, booking.id);
+                        makeEditableCell(row, "passenger_phone", booking.passenger_phone, booking.id);
+                        makeEditableCell(row, "date", booking.date, booking.id);
+                        makeEditableCell(row, "time", booking.time, booking.id);
+                        makeEditableCell(row, "duration_minutes", booking.duration_minutes, booking.id, "number");
+                        makeEditableCell(row, "pickup_location", booking.pickup_location, booking.id);
+                        makeEditableCell(row, "dropoff_location", booking.dropoff_location, booking.id);
+                        makeEditableCell(row, "passengers", booking.passengers, booking.id, "number");
+                        makeEditableCell(row, "bags", booking.bags, booking.id, "number");
+
+                        // 2. Preço (não editável)
+                        const priceCell = row.insertCell();
+                        priceCell.classList.add('price-breakdown');
+                        priceCell.innerHTML = `
+                            <strong class="text-base">${formatCurrency(booking.total_with_vat)}€</strong>
+                            ${booking.discount_amount ? `<span>Desc: -${formatCurrency(booking.discount_amount)}</span>` : ''}
+                            <span>IVA (${(booking.vat_percentage !== null ? booking.vat_percentage.toFixed(1) : 'N/A')}%): ${formatCurrency(booking.vat_amount)})</span>
+                        `;
+
+                        row.insertCell().textContent = booking.applied_voucher_code || '-';
+
+                        // 3. Status
+                        const statusCell = row.insertCell();
+                        const statusSelect = document.createElement('select');
+                        statusSelect.classList.add('status-select');
+                        statusSelect.dataset.bookingId = booking.id;
+                        statusSelect.dataset.currentStatus = booking.status;
+                        ALLOWED_BOOKING_STATUSES.forEach(status => {
+                            const option = document.createElement('option');
+                            option.value = status;
+                            option.textContent = status.replace(/_/g, ' ');
+                            if (status === booking.status) option.selected = true;
+                            statusSelect.appendChild(option);
+                        });
+                        statusSelect.addEventListener('change', handleStatusChange);
+                        statusCell.appendChild(statusSelect);
+
+                        // 4. Driver assignment
+                        const driverCell = row.insertCell();
+                        driverCell.classList.add('assigned-driver-cell');
+                        const driverSelect = document.createElement('select');
+                        driverSelect.classList.add('driver-select');
+                        driverSelect.dataset.bookingId = booking.id;
+                        driverSelect.dataset.currentDriverId = booking.assigned_driver_id || "";
+                        const noDriverOption = document.createElement('option');
+                        noDriverOption.value = "";
+                        noDriverOption.textContent = "-- Nenhum --";
+                        driverSelect.appendChild(noDriverOption);
+                        activeDriversList.forEach(driver => {
+                            const option = document.createElement('option');
+                            option.value = driver.id;
+                            option.textContent = `${driver.first_name} ${driver.last_name}`;
+                            if (booking.assigned_driver_id === driver.id) option.selected = true;
+                            driverSelect.appendChild(option);
+                        });
+                        driverSelect.addEventListener('change', handleDriverAssign);
+                        driverCell.appendChild(driverSelect);
+
+                        // User Cell
+                        const userCell = row.insertCell();
+                        userCell.innerHTML = `<span class="table-user">${booking.user_id ? booking.user_id : '-'}</span>`;
+
+                        row.insertCell().textContent = formatDateTime(booking.created_at);
+
+                        // 5. Ações
+                        const actionsCell = row.insertCell();
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Excluir';
+                        deleteButton.classList.add('btn', 'btn-danger');
+                        deleteButton.onclick = () => handleDeleteBooking(booking.id);
+                        actionsCell.appendChild(deleteButton);
+                    });
+                }
+            } catch (error) {
+                console.error('Erro obter reservas:', error);
+                showAdminMessage(adminBookingMessage, `Erro obter reservas: ${error.message}`, 'error');
+                noBookingsMessage.style.display = 'block';
+            } finally {
+                loadingBookingsIndicator.style.display = 'none';
+            }
+        }
+
+        // Campo editável generalizado para qualquer texto/number/date
+        function makeEditableCell(row, field, value, bookingId, inputType = "text") {
+            const cell = row.insertCell();
+            cell.textContent = value ?? '';
+            cell.classList.add('editable-cell');
+            cell.style.cursor = "pointer";
+            cell.title = "Duplo clique para editar";
+            cell.addEventListener('dblclick', () => enableEdit());
+
+            function enableEdit() {
+                const input = document.createElement('input');
+                input.type = inputType;
+                input.value = value ?? '';
+                input.className = 'bg-yellow-50 border rounded px-2 py-1 w-full';
+                cell.textContent = '';
+                cell.appendChild(input);
+                input.focus();
+                input.select();
+
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') trySaveEdit();
+                    if (e.key === 'Escape') cell.textContent = value ?? '';
+                });
+                input.addEventListener('blur', trySaveEdit);
+
+                function trySaveEdit() {
+                    let newValue = inputType === "number" ? (input.value === '' ? null : Number(input.value)) : input.value.trim();
+
+                    // Pequena normalização para data/time se necessário
+                    if (inputType === "number" && isNaN(newValue)) newValue = null;
+                    if (newValue !== String(value ?? '')) {
+                        updateBookingField(bookingId, field, newValue)
+                            .then(resp => {
+                                if (resp.success) {
+                                    cell.textContent = newValue ?? '';
+                                    value = newValue;
+                                } else {
+                                    showAdminMessage(adminBookingMessage, resp.error || 'Falha ao atualizar', 'error');
+                                    cell.textContent = value ?? '';
+                                }
+                            });
+                    } else {
+                        cell.textContent = value ?? '';
+                    }
+                }
+            }
+        }
+
+        // Chamada PATCH para campo específico
+        async function updateBookingField(bookingId, field, value) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}/field`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ field, value })
+                });
+                if (!response.ok) return {success: false, error: "Erro " + response.statusText};
+                const result = await response.json();
+                if (result.error) return {success: false, error: result.error};
+                return {success: true, booking: result};
+            } catch (err) {
+                return {success: false, error: err.message};
+            }
+        }        
+
+    // Evento de mudança de status 
+        async function handleStatusChange(event) {
+            const selectElement = event.target; const bookingId = selectElement.dataset.bookingId; const newStatus = selectElement.value; const previousStatus = selectElement.dataset.currentStatus;
+            if (!confirm(`Alterar status reserva ID ${bookingId} para "${newStatus.replace(/_/g, ' ')}"?`)) { selectElement.value = previousStatus; return; }
+            loadingBookingsIndicator.style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}/status`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status: newStatus }), });
+                const result = await response.json();
+                if (response.ok) { showAdminMessage(adminBookingMessage, `Status reserva ID ${bookingId} atualizado.`, 'success'); fetchAndDisplayBookings(); }
+                else { showAdminMessage(adminBookingMessage, `Erro atualizar status: ${result.error || response.statusText}.`, 'error'); selectElement.value = previousStatus; }
+            } catch (error) { console.error('Erro atualizar status:', error); showAdminMessage(adminBookingMessage, `Erro comunicação status: ${error.message}`, 'error'); selectElement.value = previousStatus; }
+            finally { loadingBookingsIndicator.style.display = 'none'; }
+         }
+        async function handleDeleteBooking(bookingId) {
+             if (!confirm(`Tem a certeza que deseja excluir a reserva ID ${bookingId}?`)) return;
+            loadingBookingsIndicator.style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}`, { method: 'DELETE' });
+                if (response.ok) { showAdminMessage(adminBookingMessage, `Reserva ID ${bookingId} excluída.`, 'success'); fetchAndDisplayBookings(); }
+                else { const result = await response.json().catch(() => ({error: 'Erro desconhecido'})); showAdminMessage(adminBookingMessage, `Erro excluir reserva: ${result.error}.`, 'error'); }
+            } catch (error) { console.error('Erro excluir reserva:', error); showAdminMessage(adminBookingMessage, `Erro comunicação exclusão: ${error.message}`, 'error'); }
+            finally { loadingBookingsIndicator.style.display = 'none'; }
+        }
+        async function handleDriverAssign(event) {
+            const selectElement = event.target; const bookingId = selectElement.dataset.bookingId; const driverId = selectElement.value ? parseInt(selectElement.value) : null; const driverName = selectElement.options[selectElement.selectedIndex].text; const previousDriverId = selectElement.dataset.currentDriverId || "";
+            const actionText = driverId ? `atribuir ${driverName}` : "remover atribuição";
+             if (!confirm(`Tem a certeza que deseja ${actionText} para reserva ID ${bookingId}?`)) { selectElement.value = previousDriverId; return; }
+             loadingBookingsIndicator.style.display = 'block';
+             try {
+                 const response = await fetch(`${API_BASE_URL}/admin/bookings/${bookingId}/assign`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ driver_id: driverId }) });
+                 const result = await response.json();
+                 if (response.ok) { showAdminMessage(adminBookingMessage, `Motorista ${actionText} com sucesso para reserva ID ${bookingId}.`, 'success'); fetchAndDisplayBookings(); }
+                 else { showAdminMessage(adminBookingMessage, `Erro atribuir motorista: ${result.error || response.statusText}.`, 'error'); selectElement.value = previousDriverId; }
+             } catch (error) { console.error('Erro atribuir motorista:', error); showAdminMessage(adminBookingMessage, `Erro comunicação atribuição: ${error.message}`, 'error'); selectElement.value = previousDriverId; }
+             finally { loadingBookingsIndicator.style.display = 'none'; }
+        }
+
+        async function fetchActiveDrivers() {
+            try { const response = await fetch(`${API_BASE_URL}/admin/drivers?active=true`); if (!response.ok) throw new Error(`Erro ${response.status}`); activeDriversList = await response.json(); }
+            catch (error) { console.error('Erro obter motoristas ativos:', error); showAdminMessage(adminDriverMessage, `Erro obter lista motoristas: ${error.message}`, 'error'); activeDriversList = []; }
+        }
+
+        async function fetchAndDisplayDrivers() {
+            loadingDriversIndicator.style.display = 'block';
+            driversTableBody.innerHTML = '';
+            noDriversMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/drivers`);
+                if (!response.ok) throw new Error(`Erro ${response.status}`);
+                const drivers = await response.json();
+                if (drivers.length === 0) {
+                    noDriversMessage.style.display = 'block';
+                } else {
+                    drivers.forEach(driver => {
+                        const row = driversTableBody.insertRow();
+                        row.insertCell().textContent = driver.id;
+                        row.insertCell().textContent = driver.first_name;
+                        row.insertCell().textContent = driver.last_name;
+                        row.insertCell().textContent = driver.email || 'N/A';
+                        row.insertCell().textContent = driver.phone_number || 'N/A';
+                        row.insertCell().textContent = driver.created_at ? new Date(driver.created_at).toLocaleString() : 'N/A';
+
+                        const statusCell = row.insertCell();
+                        const statusSelect = document.createElement('select');
+                        const statuses = [
+                            { value: true, label: "Ativo" },
+                            { value: false, label: "Inativo" }
+                        ];
+                        statuses.forEach(opt => {
+                            const option = document.createElement('option');
+                            option.value = String(opt.value);
+                            option.textContent = opt.label;
+                            if (driver.is_active === opt.value) option.selected = true;
+                            statusSelect.appendChild(option);
+                        });
+                        statusSelect.addEventListener('change', async function() {
+                            const newVal = this.value === "true";
+                            const resp = await fetch(`${API_BASE_URL}/admin/drivers/${driver.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ is_active: newVal }),
+                            });
+                            if (resp.ok) {
+                                showAdminMessage(adminDriverMessage, "Estado atualizado", "success");
+                                await fetchAndDisplayDrivers();
+                            } else {
+                                const result = await resp.json();
+                                showAdminMessage(adminDriverMessage, result.error || "Erro ao atualizar estado", "error");
+                                this.value = String(driver.is_active);
+                            }
+                        })
+                        statusCell.appendChild(statusSelect);
+
+                        // ACTIONS COLUMN
+                        const actionsCell = row.insertCell();
+
+                        // Excluir
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Excluir';
+                        deleteButton.classList.add('btn', 'btn-danger');
+                        deleteButton.onclick = () => handleDeleteDriver(driver.id);
+                        actionsCell.appendChild(deleteButton);
+                    })
+                }
+            } catch (error) {
+                console.error('Erro obter motoristas:', error);
+                showAdminMessage(adminDriverMessage, `Erro obter motoristas: ${error.message}`, 'error');
+                noDriversMessage.style.display = 'block';
+            } finally {
+                loadingDriversIndicator.style.display = 'none';
+            }
+        }
+
+        if (addDriverForm) {
+          addDriverForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            loadingDriversIndicator.style.display = 'block';
+            adminDriverMessage.style.display = 'none';
+            const formData = new FormData(addDriverForm);
+
+            console.log(formData.get("first_name"))
+
+            // ATENÇÃO PARA O CHECKBOX:
+            const data = {
+              first_name: formData.get('first_name'),
+              last_name: formData.get('last_name'),
+              email: formData.get('email') || null,
+              phone_number: formData.get('phone_number') || null,
+              is_active: formData.get('is_active') ? true : false  // checkbox retorna 'on' se marcado
+            };
+
+            try {
+              const response = await fetch(`${API_BASE_URL}/admin/drivers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+              });
+              const result = await response.json();
+              if (response.ok) {
+                showAdminMessage(adminDriverMessage, `Motorista "${result.first_name} ${result.last_name}" adicionado!`, 'success');
+                addDriverForm.reset();
+                await fetchAndDisplayDrivers();
+                await fetchActiveDrivers();
+                await fetchAndDisplayBookings();
+              } else {
+                showAdminMessage(adminDriverMessage, `Erro ao adicionar: ${result.error || response.statusText}`, 'error');
+              }
+            } catch (error) {
+              console.error('Erro fetch adicionar motorista:', error);
+              showAdminMessage(adminDriverMessage, `Erro comunicação adicionar motorista: ${error.message}`, 'error');
+            } finally {
+              loadingDriversIndicator.style.display = 'none';
+            }
+          });
+        } else {
+          console.error("Elemento addDriverForm não encontrado!");
+        }
+        
+        async function handleToggleDriverActive(driverId, newActiveState) {
+             const actionText = newActiveState ? 'ativar' : 'desativar'; if (!confirm(`Tem a certeza que deseja ${actionText} o motorista ID ${driverId}?`)) return;
+             loadingDriversIndicator.style.display = 'block';
+             try {
+                 const response = await fetch(`${API_BASE_URL}/admin/drivers/${driverId}`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_active: newActiveState }) }); const result = await response.json();
+                 if (response.ok) { showAdminMessage(adminDriverMessage, `Motorista ID ${driverId} ${actionText}do.`, 'success'); await fetchAndDisplayDrivers(); await fetchActiveDrivers(); await fetchAndDisplayBookings(); }
+                 else { showAdminMessage(adminDriverMessage, `Erro ao ${actionText}: ${result.error || response.statusText}`, 'error'); }
+             } catch (error) { console.error(`Erro ao ${actionText} motorista:`, error); showAdminMessage(adminDriverMessage, `Erro comunicação ${actionText}: ${error.message}`, 'error'); }
+             finally { loadingDriversIndicator.style.display = 'none'; }
+        }
+        async function handleDeleteDriver(driverId) {
+             if (!confirm(`Tem a certeza que deseja EXCLUIR PERMANENTEMENTE o motorista ID ${driverId}? Esta ação não pode ser desfeita.`)) return;
+            loadingDriversIndicator.style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/drivers/${driverId}`, { method: 'DELETE' });
+                if (response.ok) { showAdminMessage(adminDriverMessage, `Motorista ID ${driverId} excluído.`, 'success'); await fetchAndDisplayDrivers(); await fetchActiveDrivers(); await fetchAndDisplayBookings(); }
+                else { 
+                    const result = await response.json().catch(() => ({error: 'Erro desconhecido ao excluir.'})); 
+                    showAdminMessage(adminDriverMessage, `Erro excluir motorista: ${result.error}. Verifique se o motorista tem reservas associadas.`, 'error'); 
+                }
+            } catch (error) { console.error('Erro excluir motorista:', error); showAdminMessage(adminDriverMessage, `Erro comunicação exclusão: ${error.message}`, 'error'); }
+            finally { loadingDriversIndicator.style.display = 'none'; }
+        }
+
+        async function fetchAndDisplayVehicles() {
+            loadingVehiclesIndicator.style.display = 'block'; vehiclesTableBody.innerHTML = ''; noVehiclesMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vehicles`); if (!response.ok) throw new Error(`Erro ${response.status}`);
+                const vehicles = await response.json();
+                if (vehicles.length === 0) { noVehiclesMessage.style.display = 'block'; }
+                else {
+                    vehicles.forEach(vehicle => {
+                        const row = vehiclesTableBody.insertRow();
+                        row.insertCell().textContent = vehicle.id; row.insertCell().textContent = vehicle.license_plate; row.insertCell().textContent = vehicle.make || 'N/A'; row.insertCell().textContent = vehicle.model || 'N/A'; row.insertCell().textContent = vehicle.year || 'N/A';
+                        row.insertCell().textContent = vehicle.capacity_passengers; row.insertCell().textContent = vehicle.capacity_bags !== null ? vehicle.capacity_bags : 'N/A';
+                        const statusCell = row.insertCell(); statusCell.textContent = vehicle.status; statusCell.classList.add(vehicle.status === 'ACTIVE' ? 'text-green-600' : (vehicle.status === 'MAINTENANCE' ? 'text-yellow-600' : 'text-red-600'), 'font-medium');
+                        row.insertCell().textContent = formatDateTime(vehicle.created_at);
+                        const actionsCell = row.insertCell();
+                        // Botão Editar (Placeholder)
+                        const editButton = document.createElement('button'); editButton.textContent = 'Editar'; editButton.classList.add('btn', 'btn-info'); editButton.onclick = () => alert(`Funcionalidade de editar veículo ID ${vehicle.id} ainda não implementada.`); actionsCell.appendChild(editButton);
+                        const deleteButton = document.createElement('button'); deleteButton.textContent = 'Excluir'; deleteButton.classList.add('btn', 'btn-danger'); deleteButton.onclick = () => handleDeleteVehicle(vehicle.id); actionsCell.appendChild(deleteButton);
+                    });
+                }
+            } catch (error) { console.error('Erro obter veículos:', error); showAdminMessage(adminVehicleMessage, `Erro obter veículos: ${error.message}`, 'error'); noVehiclesMessage.style.display = 'block'; }
+            finally { loadingVehiclesIndicator.style.display = 'none'; }
+        }
+        if (addVehicleForm) { addVehicleForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); loadingVehiclesIndicator.style.display = 'block'; adminVehicleMessage.style.display = 'none';
+            const formData = new FormData(addVehicleForm); const data = { license_plate: formData.get('license_plate'), make: formData.get('make') || null, model: formData.get('model') || null, year: formData.get('year') ? parseInt(formData.get('year')) : null, capacity_passengers: parseInt(formData.get('capacity_passengers')), capacity_bags: formData.get('capacity_bags') ? parseInt(formData.get('capacity_bags')) : null, status: formData.get('status') };
+            if (!data.license_plate || isNaN(data.capacity_passengers) || data.capacity_passengers < 1) { showAdminMessage(adminVehicleMessage, 'Matrícula e Capacidade Passageiros (>0) obrigatórios.', 'error'); loadingVehiclesIndicator.style.display = 'none'; return; }
+            if (data.year !== null && (isNaN(data.year) || data.year < 1980 || data.year > 2099) ) { showAdminMessage(adminVehicleMessage, 'Ano inválido.', 'error'); loadingVehiclesIndicator.style.display = 'none'; return; }
+            if (data.capacity_bags !== null && (isNaN(data.capacity_bags) || data.capacity_bags <0)) { showAdminMessage(adminVehicleMessage, 'Capacidade Malas inválida.', 'error'); loadingVehiclesIndicator.style.display = 'none'; return; }
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vehicles`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }); const result = await response.json();
+                if (response.ok) { showAdminMessage(adminVehicleMessage, `Veículo "${result.license_plate}" adicionado!`, 'success'); addVehicleForm.reset(); fetchAndDisplayVehicles(); }
+                else { showAdminMessage(adminVehicleMessage, `Erro adicionar veículo: ${result.error || response.statusText}`, 'error'); }
+            } catch (error) { console.error('Erro fetch adicionar veículo:', error); showAdminMessage(adminVehicleMessage, `Erro comunicação adicionar veículo: ${error.message}`, 'error'); }
+            finally { loadingVehiclesIndicator.style.display = 'none'; }
+         }); } else { console.error("Elemento addVehicleForm não encontrado!"); }
+        async function handleDeleteVehicle(vehicleId) {
+             if (!confirm(`Tem a certeza que deseja EXCLUIR PERMANENTEMENTE o veículo ID ${vehicleId}? Esta ação não pode ser desfeita.`)) return;
+            loadingVehiclesIndicator.style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vehicles/${vehicleId}`, { method: 'DELETE' });
+                if (response.ok) { showAdminMessage(adminVehicleMessage, `Veículo ID ${vehicleId} excluído.`, 'success'); fetchAndDisplayVehicles(); }
+                else { const result = await response.json().catch(() => ({error: 'Erro desconhecido ao excluir.'})); showAdminMessage(adminVehicleMessage, `Erro excluir veículo: ${result.error}.`, 'error'); }
+            } catch (error) { console.error('Erro excluir veículo:', error); showAdminMessage(adminVehicleMessage, `Erro comunicação exclusão: ${error.message}`, 'error'); }
+            finally { loadingVehiclesIndicator.style.display = 'none'; }
+        }
+
+        async function fetchAndDisplayTariffs() {
+            loadingTariffsIndicator.style.display = 'block'; adminTariffMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/settings/tariffs`); if (!response.ok) { const d = await response.json().catch(()=>({error:`Erro ${response.status}`})); throw new Error(d.error); }
+                const t = await response.json();
+                document.getElementById('base_rate_eur').value = t.base_rate_eur?.toFixed(2) || '0.00'; document.getElementById('rate_per_km_eur').value = t.rate_per_km_eur?.toFixed(2) || '0.00'; document.getElementById('rate_per_passenger_eur').value = t.rate_per_passenger_eur?.toFixed(2) || '0.00'; document.getElementById('rate_per_bag_eur').value = t.rate_per_bag_eur?.toFixed(2) || '0.00'; document.getElementById('night_surcharge_applies').checked = t.night_surcharge_applies || false; document.getElementById('night_surcharge_percentage').value = t.night_surcharge_percentage?.toFixed(1) || '0.0'; document.getElementById('night_surcharge_start_hour').value = t.night_surcharge_start_hour ?? '22'; document.getElementById('night_surcharge_end_hour').value = t.night_surcharge_end_hour ?? '6'; document.getElementById('booking_slot_overlap_minutes').value = t.booking_slot_overlap_minutes ?? '30';
+                tariffsUpdatedAt.textContent = t.updated_at ? formatDateTime(t.updated_at) : 'N/A';
+            } catch (error) { console.error('Erro obter tarifas:', error); showAdminMessage(adminTariffMessage, `Erro carregar tarifas: ${error.message}`, 'error'); }
+            finally { loadingTariffsIndicator.style.display = 'none'; }
+        }
+        if (updateTariffForm) { updateTariffForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); loadingTariffsIndicator.style.display = 'block'; adminTariffMessage.style.display = 'none';
+            const data = { base_rate_eur: parseFloat(document.getElementById('base_rate_eur').value), rate_per_km_eur: parseFloat(document.getElementById('rate_per_km_eur').value), rate_per_passenger_eur: parseFloat(document.getElementById('rate_per_passenger_eur').value), rate_per_bag_eur: parseFloat(document.getElementById('rate_per_bag_eur').value), night_surcharge_applies: document.getElementById('night_surcharge_applies').checked, night_surcharge_percentage: parseFloat(document.getElementById('night_surcharge_percentage').value), night_surcharge_start_hour: parseInt(document.getElementById('night_surcharge_start_hour').value), night_surcharge_end_hour: parseInt(document.getElementById('night_surcharge_end_hour').value), booking_slot_overlap_minutes: parseInt(document.getElementById('booking_slot_overlap_minutes').value) };
+            if (Object.values(data).some(v => v === null || (typeof v === 'number' && isNaN(v)))) { showAdminMessage(adminTariffMessage, 'Verifique campos numéricos.', 'error'); loadingTariffsIndicator.style.display = 'none'; return; }
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/settings/tariffs`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const result = await response.json();
+                if (response.ok) { showAdminMessage(adminTariffMessage, 'Tarifas atualizadas!', 'success'); tariffsUpdatedAt.textContent = result.updated_at ? formatDateTime(result.updated_at) : 'N/A'; }
+                else { showAdminMessage(adminTariffMessage, `Erro atualizar tarifas: ${result.error || response.statusText}`, 'error'); }
+            } catch (error) { console.error('Erro atualizar tarifas:', error); showAdminMessage(adminTariffMessage, `Erro comunicação tarifas: ${error.message}`, 'error'); }
+            finally { loadingTariffsIndicator.style.display = 'none'; }
+        }); } else { console.error("Elemento updateTariffForm não encontrado!"); }
+
+        async function fetchAndDisplayVouchers() {
+            loadingVouchersIndicator.style.display = 'block';
+            vouchersTableBody.innerHTML = '';
+            noVouchersMessage.style.display = 'none';
+            adminVoucherMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vouchers`);
+                if (!response.ok) {
+                    const d = await response.json().catch(() => ({ error: `Erro ${response.status}` }));
+                    throw new Error(d.error);
+                }
+                const vouchers = await response.json();
+                if (vouchers.length === 0) {
+                    noVouchersMessage.style.display = 'block';
+                } else {
+                    vouchers.forEach(voucher => {
+                        const row = vouchersTableBody.insertRow();
+                        row.insertCell().textContent = voucher.id;
+
+                        // Código
+                        row.insertCell().innerHTML = `<span class="table-code">${voucher.code}</span>`;
+
+                        // NOVO: Nome utilizador/parceiro (se existir)
+                        row.insertCell().innerHTML = `<span class="table-user">${(voucher.user && voucher.user.name) ? voucher.user.name : '-'}</span>`;
+
+                        // Descrição
+                        row.insertCell().innerHTML = `<span class="table-description">${voucher.description || '-'}</span>`;
+
+                        // Tipo
+                        row.insertCell().textContent = voucher.discount_type === 'PERCENTAGE' ? '%' : 'Fixo';
+
+                        // Valor
+                        row.insertCell().textContent = voucher.discount_type === 'PERCENTAGE'
+                            ? `${voucher.discount_value}%`
+                            : `${formatCurrency(voucher.discount_value)} €`;
+
+                        // Valor mínimo reserva
+                        row.insertCell().textContent = formatCurrency(voucher.min_booking_value);
+
+                        row.insertCell().innerHTML = `<span class="table-user">${voucher.user_id}</span>`;
+
+                        // Validade
+                        row.insertCell().textContent = formatDate(voucher.expiration_date);
+
+                        // Usos
+                        row.insertCell().textContent = `${voucher.current_uses}/${voucher.max_uses === 0 ? '∞' : voucher.max_uses}`;
+
+                        // Status
+                        const statusCell = row.insertCell();
+                        statusCell.textContent = voucher.is_active ? 'Ativo' : 'Inativo';
+                        statusCell.classList.add(voucher.is_active ? 'text-green-600' : 'text-red-600', 'font-medium');
+        
+                        // Criado em
+                        row.insertCell().textContent = formatDateTime(voucher.created_at);
+
+                        // Ações
+                        const actionsCell = row.insertCell();
+                        const toggleActiveButton = document.createElement('button');
+                        toggleActiveButton.textContent = voucher.is_active ? 'Desativar' : 'Ativar';
+                        toggleActiveButton.classList.add('btn', voucher.is_active ? 'btn-warning' : 'btn-success');
+                        toggleActiveButton.onclick = () => handleToggleVoucherActive(voucher.id, !voucher.is_active);
+                        actionsCell.appendChild(toggleActiveButton);
+
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Excluir';
+                        deleteButton.classList.add('btn', 'btn-danger');
+                        deleteButton.onclick = () => handleDeleteVoucher(voucher.id);
+                        actionsCell.appendChild(deleteButton);
+                    });
+                }
+            } catch (error) {
+                console.error('Erro obter vouchers:', error);
+                showAdminMessage(adminVoucherMessage, `Erro carregar vouchers: ${error.message}`, 'error');
+                noVouchersMessage.style.display = 'block';
+            } finally {
+                loadingVouchersIndicator.style.display = 'none';
+            }
+        }        
+        async function handleToggleVoucherActive(voucherId, newActiveState) {
+             const actionText = newActiveState ? 'ativar' : 'desativar'; if (!confirm(`Tem a certeza que deseja ${actionText} o voucher ID ${voucherId}?`)) return;
+             loadingVouchersIndicator.style.display = 'block'; adminVoucherMessage.style.display = 'none';
+             try {
+                 const response = await fetch(`${API_BASE_URL}/admin/vouchers/${voucherId}`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ is_active: newActiveState }) }); const result = await response.json();
+                 if (response.ok) { showAdminMessage(adminVoucherMessage, `Voucher ID ${voucherId} ${actionText}do.`, 'success'); fetchAndDisplayVouchers(); }
+                 else { showAdminMessage(adminVoucherMessage, `Erro ao ${actionText}: ${result.error || response.statusText}`, 'error'); }
+             } catch (error) { console.error(`Erro ao ${actionText} voucher:`, error); showAdminMessage(adminVoucherMessage, `Erro comunicação ${actionText}: ${error.message}`, 'error'); }
+             finally { loadingVouchersIndicator.style.display = 'none'; }
+        }
+        async function handleDeleteVoucher(voucherId) {
+             if (!confirm(`Tem a certeza que deseja EXCLUIR PERMANENTEMENTE o voucher ID ${voucherId}?`)) return;
+            loadingVouchersIndicator.style.display = 'block'; adminVoucherMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vouchers/${voucherId}`, { method: 'DELETE' });
+                if (response.ok) { showAdminMessage(adminVoucherMessage, `Voucher ID ${voucherId} excluído.`, 'success'); fetchAndDisplayVouchers(); }
+                else { const result = await response.json().catch(() => ({error: 'Erro desconhecido'})); showAdminMessage(adminVoucherMessage, `Erro excluir voucher: ${result.error}.`, 'error'); }
+            } catch (error) { console.error('Erro excluir voucher:', error); showAdminMessage(adminVoucherMessage, `Erro comunicação exclusão: ${error.message}`, 'error'); }
+            finally { loadingVouchersIndicator.style.display = 'none'; }
+        }
+
+        refreshBookingsBtn.addEventListener('click', fetchAndDisplayBookings);
+        refreshDriversBtn.addEventListener('click', fetchAndDisplayDrivers);
+        refreshVehiclesBtn.addEventListener('click', fetchAndDisplayVehicles);
+        refreshTariffsBtn.addEventListener('click', fetchAndDisplayTariffs);
+        refreshVouchersBtn.addEventListener('click', fetchAndDisplayVouchers);
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log("DOM Carregado. Adicionando event listeners e carregando dados...");
+            loadingBookingsIndicator.style.display = 'block';
+            loadingDriversIndicator.style.display = 'block';
+            loadingVehiclesIndicator.style.display = 'block';
+            loadingTariffsIndicator.style.display = 'block';
+            loadingVouchersIndicator.style.display = 'block';
+            loadingUsersIndicator.style.display = 'block';
+            loadingPartnerVouchersIndicator.style.display = 'block';
+            try {
+                await fetchActiveDrivers();
+                await Promise.all([
+                    populateVoucherUserSelect(),
+                    fetchAndDisplayDrivers(),
+                    fetchAndDisplayVehicles(),
+                    fetchAndDisplayBookings(),
+                    fetchAndDisplayTariffs(),
+                    fetchAndDisplayVouchers(),
+                    fetchAndDisplayUsers(),
+                    fetchAndDisplayPartnerVouchers()
+                ]);
+                console.log("Carregamento inicial concluído.");
+            } catch (error) {
+                console.error("Erro durante o carregamento inicial:", error);
+                showAdminMessage(adminBookingMessage, `Erro fatal no carregamento inicial: ${error.message}`, 'error');
+            }
+        });
+
+        const usersTableBody = document.getElementById('usersTableBody');
+        const adminUserMessage = document.getElementById('adminUserMessage');
+        const loadingUsersIndicator = document.getElementById('loadingUsersIndicator');
+        const addUserForm = document.getElementById('addUserForm');
+        const noUsersMessage = document.getElementById('noUsersMessage');
+        const refreshUsersBtn = document.getElementById('refreshUsersBtn');
+
+        async function fetchAndDisplayUsers() {
+            loadingUsersIndicator.style.display = 'block';
+            usersTableBody.innerHTML = '';
+            noUsersMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users`);
+                if (!response.ok) throw new Error(`Erro ${response.status}`);
+                const users = await response.json();
+                if (users.length === 0) {
+                    noUsersMessage.style.display = 'block';
+                } else {
+                    users.forEach(user => {
+                        const row = usersTableBody.insertRow();
+                        row.insertCell().textContent = user.id;
+                        row.insertCell().textContent = user.name;
+                        row.insertCell().textContent = user.email;
+                        row.insertCell().textContent = user.phone_number;
+                        row.insertCell().textContent = user.role;
+                        row.insertCell().textContent = formatDateTime(user.created_at);
+                        const actionsCell = row.insertCell();
+                        // Botão Apagar (não deixa apagar admin se for só um ou o próprio)
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'Excluir';
+                        deleteBtn.classList.add('btn', 'btn-danger');
+                        deleteBtn.onclick = () => handleDeleteUser(user.id, user.name);
+                        actionsCell.appendChild(deleteBtn);
+                    });
+                }
+            } catch (error) {
+                showAdminMessage(adminUserMessage, `Erro obter utilizadores: ${error.message}`, 'error');
+                noUsersMessage.style.display = 'block';
+            } finally {
+                loadingUsersIndicator.style.display = 'none';
+            }
+        }
+
+        if (addVoucherForm) {
+            addVoucherForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                loadingVouchersIndicator.style.display = 'block';
+                adminVoucherMessage.style.display = 'none';
+
+                // LER os valores com FormData (usa os atributos name, não id!)
+                const formData = new FormData(addVoucherForm);
+                const code = formData.get('code') ? String(formData.get('code')).trim() : '';
+                const description = formData.get('description') || null;
+                const discount_type = formData.get('discount_type');
+                const discount_value = parseFloat(formData.get('discount_value'));
+                const expiration_date = formData.get('expiration_date') || null;
+                const max_uses = parseInt(formData.get('max_uses'));
+                const min_booking_value = formData.get('min_booking_value') ? parseFloat(formData.get('min_booking_value')) : null;
+                const user_id = formData.get('user_id') && formData.get('user_id') !== '' ? formData.get('user_id') : null;
+                // O valor dos checkbox é só "on" se checked, por isso usas o checked diretamente
+                const is_active = document.getElementById('newVoucherIsActive')?.checked === true;
+
+                // Validação
+                if (!code || !discount_type || isNaN(discount_value) || discount_value <= 0 || isNaN(max_uses) || max_uses < 0) {
+                    showAdminMessage(adminVoucherMessage, 'Preencha Código, Tipo, Valor (>0) e Máx. Usos (>=0).', 'error');
+                    loadingVouchersIndicator.style.display = 'none';
+                    return;
+                }
+                if (discount_type === 'PERCENTAGE' && discount_value > 100) {
+                    showAdminMessage(adminVoucherMessage, 'Desconto em % não pode ser superior a 100.', 'error');
+                    loadingVouchersIndicator.style.display = 'none';
+                    return;
+                }
+                if (min_booking_value !== null && (isNaN(min_booking_value) || min_booking_value < 0)) {
+                    showAdminMessage(adminVoucherMessage, 'Valor mínimo da reserva inválido.', 'error');
+                    loadingVouchersIndicator.style.display = 'none';
+                    return;
+                }
+
+                // Montar objeto conforme esperado pelo backend
+                const data = {
+                    code,
+                    description,
+                    discount_type,
+                    discount_value,
+                    expiration_date,
+                    max_uses,
+                    min_booking_value,
+                    user_id,
+                    is_active
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/vouchers`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        showAdminMessage(adminVoucherMessage, `Voucher "${result.code}" adicionado!`, 'success');
+                        addVoucherForm.reset();
+                        fetchAndDisplayVouchers();
+                    } else {
+                        showAdminMessage(adminVoucherMessage, `Erro adicionar voucher: ${result.error || response.statusText}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('Erro adicionar voucher:', error);
+                    showAdminMessage(adminVoucherMessage, `Erro comunicação voucher: ${error.message}`, 'error');
+                } finally {
+                    loadingVouchersIndicator.style.display = 'none';
+                }
+            });
+        } else {
+            console.error("Elemento addVoucherForm não encontrado!");
+        }
+
+        async function handleDeleteUser(userId, userName) {
+            if (!confirm(`Tem a certeza que deseja EXCLUIR definitivamente o utilizador "${userName}" (ID ${userId})?`)) return;
+            loadingUsersIndicator.style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showAdminMessage(adminUserMessage, `Utilizador "${userName}" removido.`, 'success');
+                    fetchAndDisplayUsers();
+                } else {
+                    const result = await response.json().catch(() => ({error: 'Erro desconhecido'}));
+                    showAdminMessage(adminUserMessage, `Erro excluir utilizador: ${result.error}.`, 'error');
+                }
+            } catch (error) {
+                showAdminMessage(adminUserMessage, `Erro comunicação exclusão: ${error.message}`, 'error');
+            } finally {
+                loadingUsersIndicator.style.display = 'none';
+            }
+        }
+        refreshUsersBtn.addEventListener('click', fetchAndDisplayUsers);
+
+        const partnerVouchersTableBody = document.getElementById('partnerVouchersTableBody');
+        const adminPartnerVoucherMessage = document.getElementById('adminPartnerVoucherMessage');
+        const loadingPartnerVouchersIndicator = document.getElementById('loadingPartnerVouchersIndicator');
+        const noPartnerVouchersMessage = document.getElementById('noPartnerVouchersMessage');
+        const refreshPartnerVouchersBtn = document.getElementById('refreshPartnerVouchersBtn');
+
+        async function fetchAndDisplayPartnerVouchers() {
+            loadingPartnerVouchersIndicator.style.display = 'block';
+            partnerVouchersTableBody.innerHTML = '';
+            noPartnerVouchersMessage.style.display = 'none';
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vouchers/with_user`);
+                if (!response.ok) throw new Error(`Erro ${response.status}`);
+                const vouchers = await response.json();
+                if (vouchers.length === 0) {
+                    noPartnerVouchersMessage.style.display = 'block';
+                } else {
+                    vouchers.forEach(voucher => {
+                        const row = partnerVouchersTableBody.insertRow();
+                        row.insertCell().textContent = voucher.id;
+                        row.insertCell().textContent = voucher.code;
+                        // Atenção: depende de backend serializar o user, senão faz outro fetch para buscar user!
+                        row.insertCell().textContent = voucher.user && voucher.user.name ? voucher.user.name : '(Sem nome)';
+                        row.insertCell().textContent = voucher.description || '-';
+                        row.insertCell().textContent = voucher.discount_type === 'PERCENTAGE' ? '%' : 'Fixo';
+                        row.insertCell().textContent = voucher.discount_type === 'PERCENTAGE'
+                            ? `${voucher.discount_value}%`
+                            : `${formatCurrency(voucher.discount_value)} €`;
+                        row.insertCell().textContent = `${voucher.current_uses}/${voucher.max_uses === 0 ? '∞' : voucher.max_uses}`;
+                        // Coluna Meta
+                        row.insertCell().textContent = voucher.max_uses === 0 ? '-' : voucher.max_uses;
+                        // Coluna Status
+                        let metaStatus = '';
+                        if (voucher.max_uses === 0) {
+                            metaStatus = 'Sem Limite';
+                        } else if (voucher.current_uses >= voucher.max_uses) {
+                            metaStatus = 'Meta concluída';
+                        } else {
+                            metaStatus = 'Meta por concluir';
+                        }
+                        const statusCell = row.insertCell();
+                        statusCell.innerHTML = `<span class="${metaStatus === 'Meta concluída' ? 'text-green-600 font-semibold' : 'text-yellow-600 font-semibold'}">${metaStatus}</span>`;
+                        row.insertCell().textContent = formatDateTime(voucher.created_at);
+                    });
+                }
+            } catch (error) {
+                showAdminMessage(adminPartnerVoucherMessage, `Erro obter vouchers parceiros: ${error.message}`, 'error');
+                noPartnerVouchersMessage.style.display = 'block';
+            } finally {
+                loadingPartnerVouchersIndicator.style.display = 'none';
+            }
+        }
+        refreshPartnerVouchersBtn.addEventListener('click', fetchAndDisplayPartnerVouchers);
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                logoutBtn.disabled = true;
+                logoutBtn.innerHTML = `<svg class="animate-spin w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-opacity="0.2"/><path d="M4 12a8 8 0 018-8" stroke-linecap="round"/></svg> a terminar sessão...`;
+                try {
+                    const resp = await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                    if (resp.ok) {
+                        // Podes mudar este URL se a tua app tiver outro login
+                        window.location.href = '/login';
+                    } else {
+                        alert('Falha no logout. Tenta novamente.');
+                        logoutBtn.disabled = false;
+                        logoutBtn.innerHTML = `
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Terminar Sessão
+                        `;
+                    }
+                } catch (error) {
+                    alert('Erro de ligação ao tentar terminar sessão.');
+                    logoutBtn.disabled = false;
+                    logoutBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Terminar Sessão
+                    `;
+                }
+            });
+        }
+
+        if (addUserForm) {
+            addUserForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                loadingUsersIndicator.style.display = 'block';
+                adminUserMessage.style.display = 'none';
+
+                const formData = new FormData(addUserForm);
+
+                const name = formData.get("name") ? String(formData.get("name")).trim() : "";
+                const email = formData.get("email");
+                const password = formData.get("password");
+                const phone_number = formData.get("phone_number");
+                const role = formData.get("role");
+
+                // Validação mínima
+                if (!name || !email || !password || !phone_number || !role) {
+                    showAdminMessage(adminUserMessage, "Preencha todos os campos obrigatórios.", "error");
+                    loadingUsersIndicator.style.display = 'none';
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showAdminMessage(adminUserMessage, "A palavra-passe deve ter pelo menos 6 caracteres.", "error");
+                    loadingUsersIndicator.style.display = 'none';
+                    return;
+                }
+
+                const data = {name, email, password, phone_number, role};
+
+                try {
+                    const resp = await fetch(`${API_BASE_URL}/admin/users`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await resp.json();
+                    if (resp.ok) {
+                        showAdminMessage(adminUserMessage, `Utilizador "${result.name}" criado!`, "success");
+                        addUserForm.reset();
+                        fetchAndDisplayUsers();
+                    } else {
+                        showAdminMessage(adminUserMessage, result.error || `Erro: ${resp.statusText}`, "error");
+                    }
+                } catch (error) {
+                    showAdminMessage(adminUserMessage, "Erro comunicação criação utilizador: " + error.message, "error");
+                } finally {
+                    loadingUsersIndicator.style.display = 'none';
+                }
+            });
+        } else {
+            console.error("Elemento addUserForm não encontrado!");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva de Transfer TVDE - Curvas Humildes</title>
+    <style>
+        :root {
+            --brand-green: #285C4E;
+            --brand-yellow: #FFD237;
+            --brand-dark-green-text: #0F291A;
+            --brand-light-gray-bg: #f8fafc;
+            --brand-text-color: #374151;
+            --brand-text-light: #f9fafb;
+            --brand-white: #fff;
+            --brand-border-color: #D1D5DB;
+            --brand-placeholder-color: #9ca3af;
+            --success-bg: #f0fdf4;
+            --success-text: #166534;
+            --success-border: #86efac;
+            --error-bg: #fef2f2;
+            --error-text: #991b1b;
+            --error-border: #fca5a5;
+            --info-bg: #eff6ff;
+            --info-text: #1e40af;
+            --info-border: #93c5fd;
+        }
+        html {
+            height: 100%;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--brand-light-gray-bg);
+            color: var(--brand-text-color);
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box;
+        }
+        .page-wrapper { 
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; 
+            width: 100%;
+            max-width: 1300px; 
+            margin: 0 auto; 
+            padding: 1rem; 
+            box-sizing: border-box;
+        }
+        .main-content { 
+            flex-grow: 1; 
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+        }
+        .company-logo {
+            display: block;
+            margin: 0 auto 1rem; 
+            max-width: 180px;
+            height: auto;
+        }
+        .back-to-site-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--brand-green);
+            font-weight: 500;
+            text-decoration: none;
+            margin-bottom: 1.5rem;
+            transition: color 0.2s ease-in-out;
+        }
+        .back-to-site-link:hover {
+            color: var(--brand-yellow);
+        }
+        .back-to-site-link svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.5rem;
+        }
+        .form-layout-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            width: 100%;
+            margin-bottom: 2.5rem; 
+            align-items: stretch; 
+        }
+        @media (min-width: 1024px) {
+            .form-layout-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        #budgetSectionFlipWrapper,
+        .container {
+            display: flex; 
+            flex-direction: column;
+            min-height: 450px;
+            position: relative; 
+        }
+        #budgetSectionFlipWrapper {
+            gap: 1.5rem; 
+        }
+        .container {
+            background-color: var(--brand-white, #fff);
+            color: var(--brand-text-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.07);
+        }
+        .container > form { 
+            flex-grow: 1; 
+            display: flex;
+            flex-direction: column;
+        }
+        .container > form > div:last-of-type:not(.message-box),
+        .container > form > button[type="submit"] { 
+            margin-top: auto; 
+        }
+        .flip-card {
+            background-color: transparent;
+            width: 100%;
+            flex-grow: 1;
+            perspective: 1000px;
+            display: flex; 
+            align-items: stretch; 
+            position: relative; 
+            z-index: 10; 
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%; 
+            transition: transform 0.7s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.is-flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%; 
+            -webkit-backface-visibility: hidden; 
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--brand-white, #fff);
+            color: var(--brand-text-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1); 
+            overflow-y: auto; 
+        }
+        .flip-card-front > form { 
+            flex-grow: 1; 
+            display: flex;
+            flex-direction: column;
+        }
+        .flip-card-front > form > .btn { 
+            margin-top: auto; 
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+            justify-content: flex-start; 
+        }
+        .flip-card-back h2 { 
+            margin-bottom: 1rem; 
+        }
+        .flip-card-back > .btn { 
+            margin-top: auto; 
+            flex-shrink: 0; 
+        }
+        .container h2, .flip-card-front h2, .flip-card-back h2 { 
+            color: var(--brand-green);
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 1.25rem;
+            text-align: center;
+        }
+        .voucher-card-standalone {
+            background-color: var(--brand-white);
+            padding: 0; 
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.07); 
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95); 
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out, max-height 0.4s ease-out, padding-top 0.4s ease-out, padding-bottom 0.4s ease-out;
+            position: relative; 
+            z-index: 5; 
+            width: 100%; 
+            flex-shrink: 0; 
+        }
+        .voucher-card-standalone.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            max-height: 500px; 
+            padding-top: 1.5rem; 
+            padding-bottom: 1.5rem; 
+            padding-left: 1.5rem; 
+            padding-right: 1.5rem; 
+        }
+        .voucher-section { 
+            border-top: 1px dashed var(--brand-yellow); 
+            padding-top: 1rem; 
+            margin-top: 0; 
+            margin-bottom: 0;
+        }
+        .voucher-section label { 
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--brand-text-color);
+            margin-bottom: 0.375rem;
+        }
+        #voucherMessage { 
+            margin-top: 1rem; 
+        }
+
+        .section-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--brand-text-color);
+            margin-bottom: 0.375rem;
+        }
+        .form-input, .form-textarea, .form-select {
+            border-radius: 0.5rem;
+            border: 1px solid var(--brand-border-color);
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            box-sizing: border-box;
+            color: var(--brand-text-color);
+            background-color: var(--brand-white, #fff);
+            appearance: none;
+        }
+        .form-input::placeholder, .form-textarea::placeholder {
+            color: var(--brand-placeholder-color);
+        }
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            border-color: var(--brand-yellow);
+            box-shadow: 0 0 0 3px rgba(255, 210, 55, 0.4);
+            outline: none;
+        }
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .input-group .form-input {
+            flex-grow: 1;
+        }
+        .phone-input-group {
+            display: flex;
+            align-items: stretch;
+        }
+        .country-code-select {
+            flex-shrink: 0;
+            width: auto;
+            min-width: 130px;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-right-width: 0;
+            padding-right: 2.5rem;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+        }
+        .phone-number-input {
+            flex-grow: 1;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+        .country-code-select:focus + .phone-number-input {
+            border-left-color: var(--brand-yellow);
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.1s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            cursor: pointer;
+            text-align: center;
+            border: 1px solid transparent;
+            line-height: 1.5;
+            text-transform: none;
+            letter-spacing: normal;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        .btn:focus-visible {
+            outline: 2px solid var(--brand-yellow);
+            outline-offset: 2px;
+        }
+        .btn-primary {
+            background-color: var(--brand-yellow);
+            color: var(--brand-dark-green-text);
+            border-color: var(--brand-yellow);
+        }
+        .btn-primary:hover {
+            background-color: #FACC15;
+            border-color: #FACC15;
+        }
+        .btn-secondary {
+            background-color: var(--brand-green);
+            color: var(--brand-text-light);
+            border-color: var(--brand-green);
+        }
+        .btn-secondary:hover {
+            background-color: #1e463b;
+            border-color: #1e463b;
+        }
+        .btn-success {
+            background-color: var(--brand-green);
+            color: var(--brand-text-light);
+            border-color: var(--brand-green);
+            padding: 0.75rem 1rem;
+        }
+        .btn-success:hover {
+            background-color: #1e463b;
+            border-color: #1e463b;
+        }
+        .btn-disabled, .btn[disabled] {
+            background-color: #cbd5e1 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+        .btn-disabled:hover, .btn[disabled]:hover {
+            background-color: #cbd5e1 !important;
+            color: #94a3b8 !important;
+        }
+        .transitionable-element { 
+            opacity: 0;
+            max-height: 0; 
+            overflow: hidden;
+            transition: opacity 0.4s ease-out, max-height 0.4s ease-out, 
+                        margin-top 0.4s ease-out, margin-bottom 0.4s ease-out,
+                        padding-top 0.4s ease-out, padding-bottom 0.4s ease-out;
+            border-width: 0; 
+        }
+        .transitionable-element.visible {
+            opacity: 1;
+            max-height: 500px; 
+        }
+        .message-box.visible { 
+            margin-top: 1rem; 
+            margin-bottom: 1rem; 
+            padding: 1rem;
+            border-width: 1px; 
+        }
+        .budget-display.visible { 
+            margin-top: 1rem; 
+            margin-bottom: 1rem; 
+            padding: 1.25rem;
+            border-width: 1px; 
+        }
+        .message-box { 
+            text-align: center;
+            font-size: 0.9rem;
+            word-wrap: break-word;
+            border-style: solid;
+            border-radius: 0.5rem;
+        }
+        .message-success {
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            border-color: var(--success-border);
+        }
+        .message-error {
+            background-color: var(--error-bg);
+            color: var(--error-text);
+            border-color: var(--error-border);
+        }
+        .message-info {
+            background-color: var(--info-bg);
+            color: var(--info-text);
+            border-color: var(--info-border);
+        }
+        .budget-display {
+            text-align: left;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            background-color: #f9fafb;
+            border-style: solid;
+            border-color: var(--brand-border-color);
+            border-radius: 0.5rem;
+            flex-shrink: 0; 
+        }
+        .budget-display strong, .budget-total strong {
+            color: var(--brand-green);
+            font-weight: 600;
+        }
+        .budget-total {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--brand-green);
+            display: block;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--brand-border-color);
+        }
+        .budget-original-price {
+            text-decoration: line-through;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+        .budget-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.375rem;
+        }
+        .budget-line span:first-child {
+            color: #4b5563;
+        }
+        .budget-display .mt-2 {
+            color: var(--brand-green);
+            opacity: 0.9;
+            font-size: 0.8rem;
+        }
+        .autocomplete-container { position: relative; }
+        .autocomplete-suggestions {
+            position: absolute;
+            border: 1px solid var(--brand-border-color);
+            border-top: none;
+            z-index: 1000; 
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--brand-white, #fff);
+            border-radius: 0 0 0.5rem 0.5rem;
+            max-height: 220px;
+            overflow-y: auto;
+            box-shadow: 0 6px 12px -2px rgba(0,0,0,0.1);
+        }
+        .autocomplete-suggestion-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--brand-text-color);
+        }
+        .autocomplete-suggestion-item:hover, .autocomplete-suggestion-item.selected {
+            background-color: var(--brand-yellow);
+            color: var(--brand-dark-green-text);
+        }
+        .suggestion-label {
+            font-weight: 600;
+        }
+        .suggestion-context {
+            font-size: 0.8rem;
+            color: #4b5563;
+            display: block;
+            margin-top: 0.125rem;
+        }
+        .button-group { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
+        @media (min-width: 640px) {
+            .button-group { flex-direction: row; justify-content: flex-end; }
+            .button-group > .btn { width: auto; }
+        }
+        .site-footer {
+            width: 100%; 
+            margin-top: auto; 
+            padding: 1.5rem;
+            background-color: var(--brand-green);
+            color: var(--brand-text-light);
+            text-align: center;
+            border-radius: 0.75rem; 
+            font-size: 0.875rem;
+            box-sizing: border-box;
+            flex-shrink: 0; 
+        }
+        .site-footer p {
+            margin: 0.25rem 0;
+        }
+        .site-footer a {
+            color: var(--brand-yellow);
+            text-decoration: none;
+        }
+        .site-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center border-b">
+    <h1 class="text-2xl font-bold tracking-tight">Painel do Cliente</h1>
+    <button 
+        onclick="logout()" 
+        class="py-2 px-5 rounded bg-neutral-200 hover:bg-neutral-100 transition text-neutral-800 font-medium shadow-sm"
+    >
+        Sair
+    </button>
+    </header>
+    <div class="page-wrapper">
+        <div class="main-content">
+            <img src="logo.png" alt="Curvas Humildes Logótipo" class="company-logo"
+                 onerror="this.alt='Logótipo Curvas Humildes não encontrado'; this.style.display='none'; console.error('Erro ao carregar logo.png');">
+            
+            <div class="form-layout-grid">
+                <div id="budgetSectionFlipWrapper"> 
+                    <div class="flip-card" id="budgetFlipCard"> 
+                        <div class="flip-card-inner" id="budgetFlipCardInner">
+                            <div class="flip-card-front">
+                                <h2>1. Calcular Orçamento</h2>
+                                <form id="budgetForm" class="space-y-5 mt-2">
+                                    <div class="flex-grow space-y-5">
+                                        <div class="autocomplete-container">
+                                            <label for="pickupLocationBudget" class="form-label">Local de Partida:</label>
+                                            <input type="text" id="pickupLocationBudget" name="pickupLocation" class="form-input" placeholder="Ex: Aeroporto de Lisboa" required autocomplete="off">
+                                            <div id="pickupSuggestions" class="autocomplete-suggestions" style="display: none;"></div>
+                                        </div>
+                                        <div class="autocomplete-container">
+                                            <label for="dropoffLocationBudget" class="form-label">Local de Destino:</label>
+                                            <input type="text" id="dropoffLocationBudget" name="dropoffLocation" class="form-input" placeholder="Ex: Hotel Mundial, Lisboa" required autocomplete="off">
+                                            <div id="dropoffSuggestions" class="autocomplete-suggestions" style="display: none;"></div>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="passengersBudget" class="form-label">Nº Passageiros:</label>
+                                                <input type="number" id="passengersBudget" name="passengers" class="form-input" min="1" value="1" required>
+                                            </div>
+                                            <div>
+                                                <label for="bagsBudget" class="form-label">Nº Malas:</label>
+                                                <input type="number" id="bagsBudget" name="bags" class="form-input" min="0" value="1" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" id="calculateBudgetBtn" class="btn btn-secondary w-full sm:w-auto">Calcular Orçamento</button>
+                                </form>
+                            </div>
+                            <div class="flip-card-back">
+                                <h2>Resultado do Orçamento</h2>
+                                <div id="budgetResult" class="budget-display transitionable-element"></div>
+                                <div id="budgetMessage" class="message-box transitionable-element"></div>
+                                <button type="button" id="flipBackButton" class="btn btn-secondary w-full sm:w-auto">Novo Cálculo</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="voucher-card-standalone" id="voucherCardStandalone">
+                        <div id="voucherSection"> <label for="voucherCodeInput" class="form-label">Código Promocional (Opcional):</label>
+                            <div class="input-group mt-1">
+                                <input type="text" id="voucherCodeInput" name="voucher_code" class="form-input uppercase" placeholder="Ex: VERAO20">
+                                <button type="button" id="applyVoucherBtn" class="btn btn-success whitespace-nowrap">Aplicar</button>
+                            </div>
+                            <div id="voucherMessage" class="message-box mt-3 transitionable-element"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="bookingSectionContainer" class="container section-disabled"> 
+                    <h2 class="text-xl">2. Submeter Pedido de Reserva</h2>
+                    <form id="bookingForm" class="space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="passengerName" class="form-label">Nome do Passageiro:</label>
+                                <input type="text" id="passengerName" name="passengerName" class="form-input" value="" placeholder="Nome Completo" required>
+                            </div>
+                            <div>
+                                <label for="passengerPhone" class="form-label">Telefone:</label>
+                                <div class="phone-input-group">
+                                    <select id="countryCodeSelect" name="country_code" class="form-select country-code-select">
+                                    </select>
+                                    <input type="tel" id="passengerPhone" name="passengerPhone" class="form-input phone-number-input" placeholder="Número de telefone" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="date" class="form-label">Data:</label>
+                                <input type="date" id="date" name="date" class="form-input" required>
+                            </div>
+                            <div>
+                                <label for="time" class="form-label">Hora:</label>
+                                <input type="time" id="time" name="time" class="form-input" required>
+                            </div>
+                        </div>
+                        <input type="hidden" id="pickupLocationBooking" name="pickupLocation">
+                        <input type="hidden" id="dropoffLocationBooking" name="dropoffLocation">
+                        <input type="hidden" id="passengersBooking" name="passengers">
+                        <input type="hidden" id="bagsBooking" name="bags">
+                        <input type="hidden" id="durationMinutesBooking" name="duration_minutes">
+                        <input type="hidden" id="appliedVoucherCodeBooking" name="voucher_code">
+                        <div>
+                            <label for="instructions" class="form-label">Instruções Adicionais:</label>
+                            <textarea id="instructions" name="instructions" rows="2" class="form-textarea" placeholder="Ex: Voo TP123, cadeira de bebé, etc."></textarea>
+                        </div>
+                        <button type="submit" id="submitBookingBtn" class="btn btn-primary w-full sm:w-auto">Submeter Pedido</button>
+                    </form>
+                    <div id="bookingMessage" class="message-box transitionable-element"></div>
+                </div>
+            <div class="container" id="myBookingsSection">
+                <h2 class="text-xl mb-3">🔎 As Minhas Reservas</h2>
+                <div id="myBookingsMessage" class="message-box mt-3 transitionable-element"></div>
+                <div id="myBookingsList" class="transitionable-element" style="overflow-x:auto;"></div>
+            </div>
+            </div> </div> <footer class="site-footer">
+            <p>&copy; <span id="currentYear"></span> Curvas Humildes. Todos os direitos reservados.</p>
+            <p>Este é um formulário de teste para demonstração.</p>
+            <p><a href="mailto:geral@curvashumildes.pt">geral@curvashumildes.pt</a></p>
+        </footer>
+    </div> 
+    
+    <script>
+        if(document.getElementById('currentYear')) { 
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+        }
+
+                // Constantes e Variáveis Globais
+        const API_BASE_URL_BACKEND = ''; 
+        const ORS_API_KEY = '5b3ce3597851110001cf6248850b8ffce4374751a5d867566f4b3269'; 
+
+        // Card 1: Orçamento (Flip Card)
+        const budgetFlipCard = document.getElementById('budgetFlipCard'); 
+        const budgetFlipCardInner = document.getElementById('budgetFlipCardInner'); 
+        const flipBackButton = document.getElementById('flipBackButton'); 
+
+        // Frente do Card 1
+        const pickupInput = document.getElementById('pickupLocationBudget');
+        const pickupSuggestionsContainer = document.getElementById('pickupSuggestions');
+        const dropoffInput = document.getElementById('dropoffLocationBudget');
+        const dropoffSuggestionsContainer = document.getElementById('dropoffSuggestions');
+        const budgetForm = document.getElementById('budgetForm');
+        const calculateBudgetBtn = document.getElementById('calculateBudgetBtn');
+
+        // Verso do Card 1 (apenas resultado e mensagem do orçamento)
+        const budgetResult = document.getElementById('budgetResult'); 
+        const budgetMessage = document.getElementById('budgetMessage');
+
+        // Card 3: Voucher (Standalone, aparece abaixo do Card 1)
+        const voucherCardStandalone = document.getElementById('voucherCardStandalone');
+        const voucherSection = document.getElementById('voucherSection');
+        const voucherCodeInput = document.getElementById('voucherCodeInput');
+        const applyVoucherBtn = document.getElementById('applyVoucherBtn');
+        const voucherMessage = document.getElementById('voucherMessage');
+
+        // Card 2: Reserva
+        const bookingSectionContainer = document.getElementById('bookingSectionContainer');
+        const bookingForm = document.getElementById('bookingForm');
+        const bookingMessage = document.getElementById('bookingMessage');
+        const submitBookingBtn = document.getElementById('submitBookingBtn');
+
+        const countryCodeSelect = document.getElementById('countryCodeSelect');
+        const passengerPhoneInput = document.getElementById('passengerPhone');
+
+        // Inputs escondidos para booking
+        const pickupLocationBookingInput = document.getElementById('pickupLocationBooking');
+        const dropoffLocationBookingInput = document.getElementById('dropoffLocationBooking');
+        const passengersBookingInput = document.getElementById('passengersBooking');
+        const bagsBookingInput = document.getElementById('bagsBooking');
+        const durationMinutesBookingInput = document.getElementById('durationMinutesBooking');
+        const appliedVoucherCodeBookingInput = document.getElementById('appliedVoucherCodeBooking');
+
+        // Estado do orçamento
+        let currentBudgetData = {
+            originalBudgetPreVat: null, finalBudgetPreVat: null, vatPercentage: null,
+            vatAmount: null, totalWithVat: null, duration: null, pickup: null,
+            dropoff: null, passengers: null, bags: null, appliedVoucherCode: null, discountAmount: 0.0
+        };
+
+        const countries = [
+            { name: "Portugal", code: "+351", flag: "🇵🇹" }, { name: "Espanha", code: "+34", flag: "🇪🇸" },
+            { name: "França", code: "+33", flag: "🇫🇷" }, { name: "Reino Unido", code: "+44", flag: "🇬🇧" },
+            { name: "Alemanha", code: "+49", flag: "🇩🇪" }, { name: "Itália", code: "+39", flag: "🇮🇹" },
+            { name: "Suíça", code: "+41", flag: "🇨🇭" }, { name: "Bélgica", code: "+32", flag: "🇧🇪" },
+            { name: "Países Baixos", code: "+31", flag: "🇳🇱" }, { name: "Brasil", code: "+55", flag: "🇧🇷" },
+            { name: "EUA", code: "+1", flag: "🇺🇸" }, { name: "Angola", code: "+244", flag: "🇦🇴" },
+            { name: "Moçambique", code: "+258", flag: "🇲🇿" },
+        ];
+
+        async function fetchAndShowMyBookings() {
+            showHideElement(myBookingsMessage, false);
+            showHideElement(myBookingsList, false);
+
+            // Extrai o JWT guardado pelo login
+            const token = sessionStorage.getItem('ch_token') || localStorage.getItem('ch_token');
+            if (!token) {
+                showMessage(myBookingsMessage, "Por favor faça login primeiro!", "error");
+                return;
+            }
+
+            try {
+                showMessage(myBookingsMessage, "A procurar reservas...", "info");
+                const response = await fetch(`${API_BASE_URL_BACKEND}/my-bookings`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || "Não foi possível obter reservas.");
+                }
+                const data = await response.json();
+                showHideElement(myBookingsMessage, false);
+                showMyBookingsList(data.bookings);
+            } catch (error) {
+                showMessage(myBookingsMessage, error.message || "Erro ao obter reservas.", "error");
+                showHideElement(myBookingsList, false);
+            }
+        }
+
+        function populateCountryCodes() {
+            if (!countryCodeSelect) return;
+            countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.code;
+                option.textContent = `${country.flag} ${country.code} (${country.name})`;
+                if (country.code === "+351") option.selected = true;
+                countryCodeSelect.appendChild(option);
+            });
+        }
+
+        function debounce(func, delay) { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); }; }
+
+        /**
+         * @param {HTMLElement} element
+         * @param {boolean} show
+         */
+        function showHideElement(element, show = true) {
+            if (!element) { console.warn("showHideElement: Elemento não encontrado."); return; }
+            element.offsetHeight; 
+            if (show) {
+                element.classList.add('visible');
+            } else {
+                element.classList.remove('visible');
+            }
+        }
+
+
+        function showMessage(element, message, type = 'success') { 
+            if (!element) { console.error("showMessage: Elemento de mensagem não encontrado."); return; } 
+            element.innerHTML = message; 
+            element.className = `message-box message-${type} transitionable-element`; 
+            
+            element.offsetHeight;
+            requestAnimationFrame(() => {
+                    element.classList.add('visible');
+            });
+
+            const timeoutDuration = (type === 'error' || type === 'info') ? 7000 : 5000;
+            setTimeout(() => { 
+                if (element) showHideElement(element, false); 
+            }, timeoutDuration); 
+        }
+
+        function formatCurrency(value) { if (value === null || value === undefined || isNaN(parseFloat(value))) return 'N/A'; try { return parseFloat(value).toFixed(2); } catch(e) { console.error("Erro ao formatar moeda:", value, e); return 'Inv.'; } }
+
+        async function fetchAutocompleteSuggestions(query, suggestionsContainer) {
+            if (query.length < 3) { suggestionsContainer.innerHTML = ''; suggestionsContainer.style.display = 'none'; return; }
+            const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${ORS_API_KEY}&text=${encodeURIComponent(query)}&boundary.country=PRT&lang=pt&layers=address,street,venue,locality,county,region`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: `Erro HTTP: ${response.statusText}` }));
+                    throw new Error(errorData.message || `Erro na API de geocodificação: ${response.statusText}`);
+                }
+                const data = await response.json();
+                displaySuggestions(data.features, suggestionsContainer, query === pickupInput.value ? pickupInput : dropoffInput);
+            } catch (error) {
+                console.error('Erro no autocomplete:', error);
+                suggestionsContainer.innerHTML = `<div class="p-2 text-xs text-red-600">Erro: ${error.message}. Tente novamente.</div>`;
+                suggestionsContainer.style.display = 'block'; 
+            }
+        }
+
+        function displaySuggestions(features, suggestionsContainer, inputElement) {
+            suggestionsContainer.innerHTML = '';
+            if (features && features.length > 0) {
+                features.forEach(feature => {
+                    const props = feature.properties;
+                    const item = document.createElement('div');
+                    item.classList.add('autocomplete-suggestion-item');
+                    let mainLabel = props.name || props.label || "Localização desconhecida";
+                    let contextParts = [props.street, props.locality, props.county, props.region].filter(Boolean); 
+                    if (props.housenumber && props.street && mainLabel.toLowerCase().includes(props.street.toLowerCase())) {
+                        contextParts = [props.locality, props.county, props.region].filter(Boolean);
+                    } else if (props.street) {
+                        if (props.housenumber) mainLabel = `${props.street} ${props.housenumber}`;
+                        else mainLabel = props.street;
+                        contextParts = [props.locality, props.county, props.region].filter(Boolean);
+                    }
+                    let displayText = `<span class="suggestion-label">${mainLabel}</span>`;
+                    const uniqueContextParts = [...new Set(contextParts.map(p => p.trim()))]; 
+                    let displayContext = uniqueContextParts.filter(p => p && mainLabel.toLowerCase() !== p.toLowerCase()).join(', ');
+                    if (displayContext) displayText += `<span class="suggestion-context">${displayContext}</span>`;
+                    item.innerHTML = displayText;
+                    item.onclick = () => {
+                        inputElement.value = props.label || mainLabel; 
+                        suggestionsContainer.innerHTML = '';
+                        suggestionsContainer.style.display = 'none';
+                    };
+                    suggestionsContainer.appendChild(item);
+                });
+                suggestionsContainer.style.display = 'block';
+            } else {
+                suggestionsContainer.innerHTML = `<div class="p-2 text-xs text-gray-500">Nenhuma sugestão.</div>`;
+                suggestionsContainer.style.display = 'block';
+            }
+        }
+
+        pickupInput.addEventListener('input', debounce(() => fetchAutocompleteSuggestions(pickupInput.value, pickupSuggestionsContainer), 350));
+        dropoffInput.addEventListener('input', debounce(() => fetchAutocompleteSuggestions(dropoffInput.value, dropoffSuggestionsContainer), 350));
+
+        document.addEventListener('click', function(event) {
+            if (pickupSuggestionsContainer && !pickupInput.contains(event.target) && !pickupSuggestionsContainer.contains(event.target)) {
+                pickupSuggestionsContainer.style.display = 'none';
+            }
+            if (dropoffSuggestionsContainer && !dropoffInput.contains(event.target) && !dropoffSuggestionsContainer.contains(event.target)) {
+                dropoffSuggestionsContainer.style.display = 'none';
+            }
+        });
+
+        function updateBudgetDisplay() {
+            if (!budgetResult) return;
+            if (currentBudgetData.finalBudgetPreVat === null) { 
+                showHideElement(budgetResult, false);
+                return;
+            }
+            let html = '';
+            if (currentBudgetData.discountAmount > 0 && currentBudgetData.originalBudgetPreVat !== null) {
+                html += `<div class="budget-line"><span>Preço Base (s/IVA):</span> <span class="budget-original-price">${formatCurrency(currentBudgetData.originalBudgetPreVat)} €</span></div>`;
+                html += `<div class="budget-line"><span>Desconto (${currentBudgetData.appliedVoucherCode || 'Promoção'}):</span> <strong>-${formatCurrency(currentBudgetData.discountAmount)} €</strong></div>`;
+            }
+            html += `<div class="budget-line"><span>Subtotal (s/IVA):</span> <strong>${formatCurrency(currentBudgetData.finalBudgetPreVat)} €</strong></div>`;
+            
+            if (typeof currentBudgetData.vatPercentage === 'number' && typeof currentBudgetData.vatAmount === 'number') {
+                html += `<div class="budget-line"><span>IVA (${currentBudgetData.vatPercentage.toFixed(1)}%):</span> <span>+ ${formatCurrency(currentBudgetData.vatAmount)} €</span></div>`;
+            } else {
+                html += `<div class="budget-line"><span>IVA:</span> <span>N/A</span></div>`;
+            }
+            if (typeof currentBudgetData.totalWithVat === 'number') {
+                html += `<div class="budget-total"><strong>Total a Pagar: ${formatCurrency(currentBudgetData.totalWithVat)} €</strong></div>`;
+            } else {
+                    html += `<div class="budget-total"><strong>Total a Pagar: N/A</strong></div>`;
+            }
+
+            if (currentBudgetData.duration !== null && typeof currentBudgetData.duration === 'number') {
+                html += `<div class="mt-2 text-sm">Duração Estimada: ${currentBudgetData.duration} minutos</div>`;
+            } else {
+                    html += `<div class="mt-2 text-sm">Duração Estimada: N/A</div>`;
+            }
+            budgetResult.innerHTML = html;
+            showHideElement(budgetResult, true);
+        }
+
+        function setBookingSectionActive(isActive) {
+            if (!bookingSectionContainer || !bookingForm || !submitBookingBtn) return;
+            if (isActive) {
+                bookingSectionContainer.classList.remove('section-disabled');
+                Array.from(bookingForm.elements).forEach(el => el.disabled = false);
+                if(currentBudgetData.finalBudgetPreVat !== null) {
+                        submitBookingBtn.disabled = false;
+                        submitBookingBtn.classList.remove('btn-disabled');
+                } else {
+                        submitBookingBtn.disabled = true;
+                        submitBookingBtn.classList.add('btn-disabled');
+                }
+            } else {
+                bookingSectionContainer.classList.add('section-disabled');
+                Array.from(bookingForm.elements).forEach(el => el.disabled = true);
+                submitBookingBtn.disabled = true; 
+                submitBookingBtn.classList.add('btn-disabled');
+            }
+        }
+
+        budgetForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            showHideElement(budgetResult, false); 
+            showHideElement(budgetMessage, false);
+            showHideElement(voucherCardStandalone, false);
+            showHideElement(voucherMessage, false); 
+            if(voucherCodeInput) voucherCodeInput.value = '';
+            
+            setBookingSectionActive(false); 
+
+            if(calculateBudgetBtn) {
+                calculateBudgetBtn.disabled = true; 
+                calculateBudgetBtn.classList.add('btn-disabled'); 
+                calculateBudgetBtn.textContent = 'Calculando...';
+            }
+            
+            currentBudgetData = {
+                originalBudgetPreVat: null, finalBudgetPreVat: null, vatPercentage: null, vatAmount: null, totalWithVat: null,
+                duration: null, pickup: null, dropoff: null, passengers: null, bags: null, appliedVoucherCode: null, discountAmount: 0.0
+            };
+
+            const formData = new FormData(budgetForm);
+            const data = {
+                pickupLocation: formData.get('pickupLocation'), dropoffLocation: formData.get('dropoffLocation'),
+                passengers: parseInt(formData.get('passengers')), bags: parseInt(formData.get('bags'))
+            };
+
+            if (!data.pickupLocation || !data.dropoffLocation) {
+                    showMessage(budgetMessage, 'Preencha partida e destino.', 'error');
+                    updateBudgetDisplay(); 
+                    if (budgetFlipCard) budgetFlipCard.classList.add('is-flipped');
+                    if(calculateBudgetBtn) {
+                    calculateBudgetBtn.disabled = false; 
+                    calculateBudgetBtn.classList.remove('btn-disabled'); 
+                    calculateBudgetBtn.textContent = 'Calcular Orçamento';
+                    }
+                    return;
+            }
+            try {
+                const response = await fetch(`${API_BASE_URL_BACKEND}/calculate-budget`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                if (response.ok) {
+                    currentBudgetData.pickup = data.pickupLocation;
+                    currentBudgetData.dropoff = data.dropoffLocation;
+                    currentBudgetData.passengers = data.passengers;
+                    currentBudgetData.bags = data.bags;
+                    
+                    currentBudgetData.originalBudgetPreVat = result.original_budget_pre_vat;
+                    currentBudgetData.finalBudgetPreVat = result.original_budget_pre_vat;
+                    currentBudgetData.vatPercentage = result.vat_percentage;
+                    currentBudgetData.vatAmount = result.vat_amount;
+                    currentBudgetData.totalWithVat = result.total_with_vat;
+                    currentBudgetData.duration = result.duration_minutes;
+                    
+                    currentBudgetData.appliedVoucherCode = null; 
+                    currentBudgetData.discountAmount = 0.0;     
+
+                    updateBudgetDisplay();
+                    showMessage(budgetMessage, `Orçamento calculado.`, 'success');
+                    showHideElement(voucherCardStandalone, true);
+                    setBookingSectionActive(true);
+                } else {
+                    showMessage(budgetMessage, `Erro: ${result.error || 'Serviço indisponível.'}`, 'error');
+                    updateBudgetDisplay(); 
+                    setBookingSectionActive(false);
+                }
+            } catch (error) {
+                console.error("Erro no cálculo do orçamento:", error);
+                showMessage(budgetMessage, `Erro de comunicação. Verifique a consola.`, 'error');
+                updateBudgetDisplay(); 
+                setBookingSectionActive(false);
+            } finally {
+                if(calculateBudgetBtn) {
+                    calculateBudgetBtn.disabled = false; 
+                    calculateBudgetBtn.classList.remove('btn-disabled'); 
+                    calculateBudgetBtn.textContent = 'Calcular Orçamento';
+                }
+                if (budgetFlipCard) budgetFlipCard.classList.add('is-flipped'); 
+            }
+        });
+
+        if (flipBackButton) {
+            flipBackButton.addEventListener('click', () => {
+                if (budgetFlipCard) budgetFlipCard.classList.remove('is-flipped');
+                
+                showHideElement(budgetResult, false);
+                showHideElement(budgetMessage, false);
+                showHideElement(voucherCardStandalone, false);
+                showHideElement(voucherMessage, false);
+                if(voucherCodeInput) voucherCodeInput.value = '';
+                
+                setBookingSectionActive(false); 
+                currentBudgetData = { 
+                    originalBudgetPreVat: null, finalBudgetPreVat: null, vatPercentage: null, vatAmount: null, totalWithVat: null,
+                    duration: null, pickup: null, dropoff: null, passengers: null, bags: null, appliedVoucherCode: null, discountAmount: 0.0
+                };
+            });
+        }
+
+        function round(value, decimals) { 
+            if (typeof value !== 'number' || typeof decimals !== 'number') return NaN;
+            return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
+        }
+
+        if(applyVoucherBtn) {
+            applyVoucherBtn.addEventListener('click', async () => {
+                const code = voucherCodeInput.value.trim().toUpperCase();
+                showHideElement(voucherMessage, false);
+                if (!code) { showMessage(voucherMessage, 'Insira um código.', 'error'); return; }
+                if (currentBudgetData.originalBudgetPreVat === null) { showMessage(voucherMessage, 'Calcule o orçamento base primeiro.', 'error'); return; }
+                
+                applyVoucherBtn.disabled = true; applyVoucherBtn.classList.add('btn-disabled'); applyVoucherBtn.textContent = 'A validar...';
+                try {
+                    const response = await fetch(`${API_BASE_URL_BACKEND}/validate-voucher`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ voucher_code: code, original_budget_pre_vat: currentBudgetData.originalBudgetPreVat })
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok && result.valid) {
+                        currentBudgetData.appliedVoucherCode = result.voucher_code;
+                        currentBudgetData.discountAmount = result.discount_amount;
+                        currentBudgetData.finalBudgetPreVat = result.final_budget_pre_vat;
+                        currentBudgetData.vatPercentage = result.vat_percentage; 
+                        currentBudgetData.vatAmount = result.vat_amount;         
+                        currentBudgetData.totalWithVat = result.total_with_vat;   
+                        showMessage(voucherMessage, `Voucher "${result.voucher_code}" aplicado!`, 'success');
+                    } else {
+                        showMessage(voucherMessage, `Erro: ${result.error || 'Não foi possível aplicar.'}`, 'error');
+                        currentBudgetData.appliedVoucherCode = null;
+                        currentBudgetData.discountAmount = 0.0;
+                        currentBudgetData.finalBudgetPreVat = currentBudgetData.originalBudgetPreVat;
+                        if (currentBudgetData.originalBudgetPreVat !== null && typeof currentBudgetData.originalBudgetPreVat === 'number') {
+                            const opv = currentBudgetData.originalBudgetPreVat;
+                            const vp = currentBudgetData.vatPercentage; 
+                            if (vp !== null && typeof vp === 'number') {
+                                currentBudgetData.vatAmount = round(opv * (vp / 100.0), 2);
+                                currentBudgetData.totalWithVat = round(opv + currentBudgetData.vatAmount, 2);
+                            } else { 
+                                currentBudgetData.vatAmount = null;
+                                currentBudgetData.totalWithVat = null;
+                            }
+                        } else { 
+                            currentBudgetData.vatAmount = null;
+                            currentBudgetData.totalWithVat = null;
+                        }
+                    }
+                    updateBudgetDisplay(); 
+                } catch (error) {
+                    console.error("Erro na validação do voucher:", error);
+                    showMessage(voucherMessage, `Erro de comunicação. Tente novamente.`, 'error');
+                    currentBudgetData.appliedVoucherCode = null; currentBudgetData.discountAmount = 0.0;
+                    currentBudgetData.finalBudgetPreVat = currentBudgetData.originalBudgetPreVat;
+                    if (currentBudgetData.originalBudgetPreVat !== null && typeof currentBudgetData.originalBudgetPreVat === 'number') {
+                        const opv = currentBudgetData.originalBudgetPreVat;
+                        const vp = currentBudgetData.vatPercentage;
+                        if (vp !== null && typeof vp === 'number') {
+                            currentBudgetData.vatAmount = round(opv * (vp / 100.0), 2);
+                            currentBudgetData.totalWithVat = round(opv + currentBudgetData.vatAmount, 2);
+                        } else {
+                            currentBudgetData.vatAmount = null;
+                            currentBudgetData.totalWithVat = null;
+                        }
+                    } else {
+                        currentBudgetData.vatAmount = null;
+                        currentBudgetData.totalWithVat = null;
+                    }
+                    updateBudgetDisplay();
+                } finally {
+                    applyVoucherBtn.disabled = false; applyVoucherBtn.classList.remove('btn-disabled'); applyVoucherBtn.textContent = 'Aplicar';
+                }
+            });
+        }
+
+        if(bookingForm) {
+            bookingForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                showHideElement(bookingMessage, false);
+                if (currentBudgetData.finalBudgetPreVat === null) { 
+                        showMessage(bookingMessage, 'Calcule o orçamento antes de submeter.', 'error'); return;
+                }
+                const phoneValue = passengerPhoneInput.value.trim();
+                if (!document.getElementById('passengerName').value.trim()) { showMessage(bookingMessage, 'Nome é obrigatório.', 'error'); document.getElementById('passengerName').focus(); return; }
+                if (!phoneValue) { showMessage(bookingMessage, 'Telefone é obrigatório.', 'error'); passengerPhoneInput.focus(); return; }
+                if (!document.getElementById('date').value || !document.getElementById('time').value) { showMessage(bookingMessage, 'Data e Hora são obrigatórias.', 'error'); return; }
+                
+                submitBookingBtn.disabled = true; submitBookingBtn.classList.add('btn-disabled'); submitBookingBtn.textContent = 'A submeter...';
+                
+                const selectedCountryCode = countryCodeSelect.value;
+                pickupLocationBookingInput.value = currentBudgetData.pickup;
+                dropoffLocationBookingInput.value = currentBudgetData.dropoff;
+                passengersBookingInput.value = currentBudgetData.passengers;
+                bagsBookingInput.value = currentBudgetData.bags;
+                durationMinutesBookingInput.value = currentBudgetData.duration;
+                appliedVoucherCodeBookingInput.value = currentBudgetData.appliedVoucherCode || '';
+                
+                const formData = new FormData(bookingForm);
+                const data = {
+                    passengerName: formData.get('passengerName'),
+                    passengerPhone: selectedCountryCode + formData.get('passengerPhone').replace(/\s+/g, ''),
+                    date: formData.get('date'), time: formData.get('time'),
+                    instructions: formData.get('instructions'),
+                    pickupLocation: formData.get('pickupLocation'), 
+                    dropoffLocation: formData.get('dropoffLocation'), 
+                    passengers: parseInt(formData.get('passengers')), 
+                    bags: parseInt(formData.get('bags')),             
+                    duration_minutes: parseInt(formData.get('duration_minutes')), 
+                    voucher_code: formData.get('voucher_code') || null 
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE_URL_BACKEND}/submit-booking`, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data),
+                    });
+                    const result = await response.json();
+                    if (response.status === 201 || response.ok) { 
+                        showMessage(bookingMessage, `Pedido submetido! ID: ${result.bookingId}. Total: ${formatCurrency(result.total_with_vat)} €. ${result.message || ''}`, 'success');
+                        budgetForm.reset(); bookingForm.reset();
+                        if(countryCodeSelect) countryCodeSelect.value = "+351"; 
+                        
+                        if (budgetFlipCard) budgetFlipCard.classList.remove('is-flipped');
+                        showHideElement(budgetResult, false); showHideElement(budgetMessage, false);
+                        showHideElement(voucherCardStandalone, false);
+                        showHideElement(voucherMessage, false);
+                        if(voucherCodeInput) voucherCodeInput.value = '';
+
+                        setBookingSectionActive(false); 
+                        currentBudgetData = { 
+                            originalBudgetPreVat: null, finalBudgetPreVat: null, vatPercentage: null, vatAmount: null, totalWithVat: null,
+                            duration: null, pickup: null, dropoff: null, passengers: null, bags: null, appliedVoucherCode: null, discountAmount: 0.0
+                        };
+                        initializeDateTime(); 
+                    } else {
+                        showMessage(bookingMessage, `Erro: ${result.error || 'Tente novamente.'}`, 'error');
+                    }
+                } catch (error) {
+                    console.error("Erro na submissão da reserva:", error);
+                    showMessage(bookingMessage, `Erro de comunicação. Verifique a consola.`, 'error');
+                } finally {
+                    if (bookingSectionContainer && bookingSectionContainer.classList.contains('section-disabled')) {
+                        submitBookingBtn.disabled = true;
+                        submitBookingBtn.classList.add('btn-disabled');
+                    } else if (submitBookingBtn) {
+                        submitBookingBtn.disabled = false;
+                        submitBookingBtn.classList.remove('btn-disabled');
+                    }
+                    if(submitBookingBtn) submitBookingBtn.textContent = 'Submeter Pedido';
+                }
+            });
+        }
+
+        function initializeDateTime() {
+            const dateInput = document.getElementById('date');
+            const timeInput = document.getElementById('time');
+            if (!dateInput || !timeInput) return;
+
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            dateInput.value = today; dateInput.min = today;
+            now.setHours(now.getHours() + 1);
+            const minutes = now.getMinutes();
+            const roundedMinutes = Math.ceil(minutes / 15) * 15;
+            if (roundedMinutes >= 60) { now.setHours(now.getHours() + 1); now.setMinutes(0); }
+            else { now.setMinutes(roundedMinutes); }
+            timeInput.value = now.toTimeString().slice(0,5);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDateTime();
+            populateCountryCodes();
+            [budgetResult, budgetMessage, voucherMessage, bookingMessage].forEach(el => {
+                if(el) el.classList.add('transitionable-element'); 
+            });
+            setBookingSectionActive(false); 
+        });
+
+        const myBookingsForm = document.getElementById('myBookingsSearchForm');
+        const myBookingsMessage = document.getElementById('myBookingsMessage');
+        const myBookingsList = document.getElementById('myBookingsList');
+
+        // Função para mostrar reservas
+        function showMyBookingsList(bookings) {
+        if (!bookings || bookings.length === 0) {
+            myBookingsList.innerHTML = '<div class="text-gray-500 text-sm">Sem reservas encontradas.</div>';
+            showHideElement(myBookingsList, true);
+            return;
+        }
+        let html = `
+            <table class="min-w-full text-sm border">
+            <thead>
+                <tr>
+                <th class="p-2 border-b">Data</th>
+                <th class="p-2 border-b">Hora</th>
+                <th class="p-2 border-b">Partida</th>
+                <th class="p-2 border-b">Destino</th>
+                <th class="p-2 border-b">Estado</th>
+                <th class="p-2 border-b">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${bookings.map(b => `
+                <tr>
+                    <td class="p-2 border-b text-center">${b.date ? b.date.split('T')[0] : ''}</td>
+                    <td class="p-2 border-b text-center">${b.time || ''}</td>
+                    <td class="p-2 border-b">${b.pickup_location || ''}</td>
+                    <td class="p-2 border-b">${b.dropoff_location || ''}</td>
+                    <td class="p-2 border-b text-center">${b.status || ''}</td>
+                    <td class="p-2 border-b text-center">${b.total_with_vat != null ? formatCurrency(b.total_with_vat) + ' €' : ''}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+            </table>
+        `;
+        myBookingsList.innerHTML = html;
+        showHideElement(myBookingsList, true);
+        }
+
+        myBookingsForm.addEventListener('submit', async function (evt) {
+        evt.preventDefault();
+        showHideElement(myBookingsMessage, false);
+        showHideElement(myBookingsList, false);
+
+        // Aqui extraímos o JWT guardado pelo login
+        const token = sessionStorage.getItem('ch_token') || localStorage.getItem('ch_token');
+        if (!token) {
+            showMessage(myBookingsMessage, "Por favor faça login primeiro!", "error");
+            return;
+        }
+
+        try {
+            showMessage(myBookingsMessage, "A procurar reservas...", "info");
+            const response = await fetch(`${API_BASE_URL_BACKEND}/my-bookings`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+            });
+            if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text || "Não foi possível obter reservas.");
+            }
+            const data = await response.json();
+            showHideElement(myBookingsMessage, false);
+            showMyBookingsList(data.bookings);
+        } catch (error) {
+            showMessage(myBookingsMessage, error.message || "Erro ao obter reservas.", "error");
+            showHideElement(myBookingsList, false);
+        }
+        });
+
+        function logout() {
+        fetch("/api/logout", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("jwt_token")}`,
+                "Content-Type": "application/json"
+            }
+        })
+        .finally(() => {
+            localStorage.removeItem("jwt_token");
+            window.location.href = "/login"; // Troque a URL se necessário!
+        });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDateTime();
+            populateCountryCodes();
+            [budgetResult, budgetMessage, voucherMessage, bookingMessage].forEach(el => {
+                if(el) el.classList.add('transitionable-element');
+            });
+            setBookingSectionActive(false);
+
+            // --- Adiciona esta linha para atualizar reservas logo ao entrar ---
+            fetchAndShowMyBookings();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel do Parceiro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white min-h-screen font-sans text-neutral-800">
+  
+<!-- Header -->
+<header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center border-b">
+  <h1 class="text-2xl font-bold tracking-tight">Painel do Parceiro</h1>
+  <button 
+    onclick="logout()" 
+    class="py-2 px-5 rounded bg-neutral-200 hover:bg-neutral-100 transition text-neutral-800 font-medium shadow-sm"
+  >
+    Sair
+  </button>
+</header>
+  
+<!-- Main content -->
+<main class="max-w-3xl mx-auto mt-10 space-y-10 px-4">
+  
+  <!-- Boas vindas -->
+  <section class="bg-white rounded-xl p-8 shadow flex flex-col gap-2 border">
+    <h2 class="text-2xl font-semibold mb-2 text-neutral-900">Bem-vindo, <span class="font-bold">Parceiro!</span></h2>
+    <p class="text-neutral-500">Gerencie seus vouchers e metas de forma simples e transparente.</p>
+  </section>
+  
+  <!-- Meus Vouchers -->
+  <section>
+    <div class="flex justify-between items-center mb-3">
+      <h2 class="text-lg font-semibold tracking-tight">Meus Vouchers</h2>
+    </div>
+    <div id="vouchers" class="bg-white rounded-lg px-6 py-5 shadow border">
+      <div id="vouchers-list" class="flex flex-col gap-4">
+        <div class="text-neutral-400 text-center py-8">Carregando vouchers...</div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Metas -->
+  <section>
+    <h2 class="text-lg font-semibold mb-3">Suas Metas</h2>
+    <div id="metas" class="bg-white rounded-lg px-6 py-5 shadow border flex flex-col gap-5">
+      <div id="metas-list" class="flex flex-col gap-5">
+        <div class="text-neutral-400 text-center py-8">Carregando metas...</div>
+      </div>
+    </div>
+  </section>
+</main>
+<!-- Footer -->
+<footer class="mt-14 text-center text-neutral-400 text-xs pb-5">
+&copy; 2024 - Plataforma de Parceiros
+</footer>
+  
+<script>
+const API_URL = "http://localhost:5000/admin";
+const TOKEN = localStorage.getItem('jwt_token');
+  
+function carregarVouchers() {
+  fetch(`${API_URL}/vouchers/with_user/me`, {
+    headers: {
+      Authorization: `Bearer ${TOKEN}`
+    }
+  })
+  .then(r => r.json())
+  .then(vouchers => {
+    const container = document.getElementById("vouchers-list");
+    container.innerHTML = "";
+    if (!vouchers.length) {
+      container.innerHTML = "<div class='text-neutral-400 text-center py-8'>Nenhum voucher cadastrado.</div>";
+      return;
+    }
+    vouchers.forEach(v => {
+      container.innerHTML += `
+        <div class="flex items-center justify-between border-b border-neutral-100 pb-4">
+          <div>
+            <span class="font-bold text-xl">${v.code}</span>
+            <div class="text-neutral-500 text-sm">
+              Desconto: <span class="text-emerald-700">${v.discount_value}${v.discount_type === "percent" ? "%" : " R$"}</span>
+              ${v.expiration_date ? `• Válido até <span class="font-mono">${new Date(v.expiration_date).toLocaleDateString()}</span>` : ""}
+            </div>
+          </div>
+          <div class="flex gap-2">
+            ${v.is_active ?
+              `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-medium">Ativo</span>` :
+              `<span class="bg-neutral-200 text-neutral-600 px-2 py-1 rounded text-xs font-medium">Inativo</span>`
+            }
+          </div>
+        </div>`;
+    });
+  }).catch(err => {
+    document.getElementById("vouchers-list").innerHTML =
+    "<div class='text-red-400 text-center py-8'>Não foi possível carregar os vouchers.</div>";
+  });
+}
+  
+function carregarMetas() {
+  fetch(`${API_URL}/vouchers/with_user/me`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('jwt_token')}`
+    }
+  })
+  .then(r => {
+    if (!r.ok) throw new Error(`Status ${r.status}`);
+    return r.json();
+  })
+  .then(vouchers => {
+    const container = document.getElementById("metas-list");
+    container.innerHTML = "";
+    if (!vouchers.length) {
+      container.innerHTML = "<div class='text-neutral-400 text-center py-8'>Nenhuma meta cadastrada.</div>";
+      return;
+    }
+  
+    vouchers.forEach(v => {
+      // Definindo status da meta
+      let statusLabel = '';
+      let statusClass = '';
+  
+      if (!v.is_active) {
+        statusLabel = 'DESATIVADO';
+        statusClass = 'bg-neutral-200 text-neutral-600';
+      } else if (v.current_uses >= v.max_uses) {
+        statusLabel = 'META CONCLUÍDA';
+        statusClass = 'bg-emerald-100 text-emerald-700';
+      } else {
+        statusLabel = 'EM PROGRESSO';
+        statusClass = 'bg-blue-100 text-blue-700';
+      }
+  
+      container.innerHTML += `
+        <div class="flex items-center justify-between border-b border-neutral-100 pb-4">
+          <div>
+            <div class="font-bold">Voucher: <span class="font-mono">${v.code}</span></div>
+            <div class="text-neutral-500 text-sm">
+              Progresso: <span class="font-semibold">${v.current_uses || 0}/${v.max_uses || "∞"}</span>
+            </div>
+          </div>
+          <div>
+            <span class="px-3 py-1 rounded-full text-xs font-medium ${statusClass}">${statusLabel}</span>
+          </div>
+        </div>
+      `;
+    });
+  })
+  .catch(err => {
+    document.getElementById("metas-list").innerHTML =
+    `<div class='text-red-400 text-center py-8'>Não foi possível carregar as metas. Erro: ${err.message}</div>`;
+  });
+}
+
+function logout() {
+  fetch("/api/logout", {
+      method: "POST",
+      headers: {
+          "Authorization": `Bearer ${localStorage.getItem("jwt_token")}`,
+          "Content-Type": "application/json"
+      }
+  })
+  .finally(() => {
+      localStorage.removeItem("jwt_token");
+      window.location.href = "/login"; // Troque a URL se necessário!
+  });
+}
+
+window.onload = () => {
+  carregarVouchers();
+  carregarMetas();
+}
+</script>
+</body>
+</html>

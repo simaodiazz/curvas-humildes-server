@@ -1,0 +1,22 @@
+# Folders
+benchmarks
+docs
+instance
+reports
+scripts
+
+# Ignore files
+.dockerignore
+.gitignore
+
+# Markdown files
+CHANGELOG.md
+README.md
+SECURITY.md
+
+# Docker files
+Dockerfile.Gunicorn
+Dockerfile.Uwsgi
+
+# Ruff files
+ruff.toml

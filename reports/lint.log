@@ -1,0 +1,294 @@
+************* Module app
+app/__init__.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/__init__.py:29:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/__init__.py:48:4: C0415: Import outside toplevel (routes.api.admin.admin_routes.admin_blueprint) (import-outside-toplevel)
+app/__init__.py:49:4: C0415: Import outside toplevel (routes.api.handlers_routes.handlers_blueprint) (import-outside-toplevel)
+app/__init__.py:50:4: C0415: Import outside toplevel (routes.main_routes.main_blueprint) (import-outside-toplevel)
+app/__init__.py:51:4: C0415: Import outside toplevel (routes.pages.pages_routes.pages_blueprint) (import-outside-toplevel)
+app/__init__.py:67:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app/__init__.py:68:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+************* Module app.db
+app/db.py:58:0: C0301: Line too long (110/100) (line-too-long)
+app/db.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/db.py:12:4: C0415: Import outside toplevel (models.tariff_settings.TariffSettings) (import-outside-toplevel)
+app/db.py:66:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/db.py:60:19: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module app.cache
+app/cache.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+************* Module app.services.tariff_settings_service
+app/services/tariff_settings_service.py:66:0: C0301: Line too long (109/100) (line-too-long)
+app/services/tariff_settings_service.py:96:0: R0912: Too many branches (13/12) (too-many-branches)
+************* Module app.services.vouchers_service
+app/services/vouchers_service.py:47:0: C0325: Unnecessary parens after 'not' keyword (superfluous-parens)
+app/services/vouchers_service.py:279:0: C0301: Line too long (123/100) (line-too-long)
+app/services/vouchers_service.py:321:0: C0301: Line too long (128/100) (line-too-long)
+app/services/vouchers_service.py:341:0: C0301: Line too long (113/100) (line-too-long)
+app/services/vouchers_service.py:126:4: W0612: Unused variable 've' (unused-variable)
+app/services/vouchers_service.py:369:11: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module app.services.budget_service
+app/services/budget_service.py:71:0: R0914: Too many local variables (17/15) (too-many-locals)
+app/services/budget_service.py:90:16: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/budget_service.py:100:16: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/budget_service.py:148:21: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/budget_service.py:157:21: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/budget_service.py:71:0: R0911: Too many return statements (8/6) (too-many-return-statements)
+app/services/budget_service.py:166:0: R0914: Too many local variables (26/15) (too-many-locals)
+app/services/budget_service.py:206:20: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/budget_service.py:166:0: R0912: Too many branches (18/12) (too-many-branches)
+app/services/budget_service.py:166:0: R0915: Too many statements (64/50) (too-many-statements)
+************* Module app.services.bookings_service
+app/services/bookings_service.py:171:0: C0301: Line too long (114/100) (line-too-long)
+app/services/bookings_service.py:285:0: C0301: Line too long (103/100) (line-too-long)
+app/services/bookings_service.py:27:0: R0914: Too many local variables (20/15) (too-many-locals)
+app/services/bookings_service.py:107:0: R0914: Too many local variables (34/15) (too-many-locals)
+app/services/bookings_service.py:107:0: R0915: Too many statements (74/50) (too-many-statements)
+app/services/bookings_service.py:324:19: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module app.services.drivers_service
+app/services/drivers_service.py:446:0: C0301: Line too long (101/100) (line-too-long)
+app/services/drivers_service.py:15:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/services/drivers_service.py:19:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/services/drivers_service.py:23:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/services/drivers_service.py:27:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/services/drivers_service.py:68:12: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/drivers_service.py:98:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/drivers_service.py:190:20: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/drivers_service.py:211:16: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/drivers_service.py:269:12: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/drivers_service.py:301:25: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/drivers_service.py:324:0: R0912: Too many branches (21/12) (too-many-branches)
+app/services/drivers_service.py:324:0: R0915: Too many statements (71/50) (too-many-statements)
+************* Module app.services.emails_service
+app/services/emails_service.py:19:0: C0301: Line too long (103/100) (line-too-long)
+app/services/emails_service.py:26:0: C0301: Line too long (103/100) (line-too-long)
+app/services/emails_service.py:38:0: C0301: Line too long (105/100) (line-too-long)
+app/services/emails_service.py:44:0: C0301: Line too long (162/100) (line-too-long)
+app/services/emails_service.py:45:0: C0301: Line too long (119/100) (line-too-long)
+app/services/emails_service.py:46:0: C0301: Line too long (173/100) (line-too-long)
+app/services/emails_service.py:47:0: C0301: Line too long (165/100) (line-too-long)
+app/services/emails_service.py:48:0: C0301: Line too long (203/100) (line-too-long)
+app/services/emails_service.py:58:0: C0301: Line too long (120/100) (line-too-long)
+app/services/emails_service.py:74:0: C0301: Line too long (120/100) (line-too-long)
+app/services/emails_service.py:80:0: C0301: Line too long (130/100) (line-too-long)
+app/services/emails_service.py:91:0: C0301: Line too long (105/100) (line-too-long)
+app/services/emails_service.py:98:0: C0301: Line too long (102/100) (line-too-long)
+app/services/emails_service.py:106:0: C0301: Line too long (131/100) (line-too-long)
+app/services/emails_service.py:112:0: C0301: Line too long (109/100) (line-too-long)
+app/services/emails_service.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/services/emails_service.py:14:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/services/emails_service.py:18:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/services/emails_service.py:62:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/services/emails_service.py:48:13: C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
+app/services/emails_service.py:57:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/services/emails_service.py:63:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/services/emails_service.py:69:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/services/emails_service.py:73:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/services/emails_service.py:79:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/services/emails_service.py:110:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/services/emails_service.py:105:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/services/emails_service.py:111:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+************* Module app.routes.driver_routes
+app/routes/driver_routes.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/routes/driver_routes.py:15:4: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/driver_routes.py:19:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/driver_routes.py:20:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/driver_routes.py:25:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+************* Module app.routes.main_routes
+app/routes/main_routes.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+************* Module app.routes.api.handlers_routes
+app/routes/api/handlers_routes.py:129:0: C0301: Line too long (155/100) (line-too-long)
+app/routes/api/handlers_routes.py:181:0: C0301: Line too long (111/100) (line-too-long)
+app/routes/api/handlers_routes.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/routes/api/handlers_routes.py:21:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/handlers_routes.py:25:4: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/handlers_routes.py:72:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/handlers_routes.py:70:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/handlers_routes.py:73:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/handlers_routes.py:78:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/handlers_routes.py:137:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/handlers_routes.py:135:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/handlers_routes.py:138:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/handlers_routes.py:145:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/handlers_routes.py:149:4: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/handlers_routes.py:231:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/handlers_routes.py:211:19: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/handlers_routes.py:208:16: E1101: Module 'app.services.bookings_service' has no 'send_new_booking_notification_email' member (no-member)
+app/routes/api/handlers_routes.py:212:16: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/handlers_routes.py:232:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/handlers_routes.py:145:0: R0912: Too many branches (13/12) (too-many-branches)
+************* Module app.routes.api.admin.bookings_routes
+app/routes/api/admin/bookings_routes.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/routes/api/admin/bookings_routes.py:42:0: W0404: Reimport 'flaskCaching' (imported line 6) (reimported)
+app/routes/api/admin/bookings_routes.py:42:0: C0413: Import "from ....cache import flaskCaching" should be placed at the top of the module (wrong-import-position)
+app/routes/api/admin/bookings_routes.py:49:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/bookings_routes.py:53:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/bookings_routes.py:54:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/bookings_routes.py:59:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/bookings_routes.py:69:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/bookings_routes.py:62:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/bookings_routes.py:70:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/bookings_routes.py:75:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/bookings_routes.py:91:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/bookings_routes.py:84:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/bookings_routes.py:92:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/bookings_routes.py:97:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/bookings_routes.py:123:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/bookings_routes.py:116:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/bookings_routes.py:124:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+************* Module app.routes.api.admin
+app/routes/api/admin/__init__.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+************* Module app.routes.api.admin.drivers_routes
+app/routes/api/admin/drivers_routes.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/routes/api/admin/drivers_routes.py:22:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/drivers_routes.py:35:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/drivers_routes.py:36:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/drivers_routes.py:42:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/drivers_routes.py:50:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/drivers_routes.py:51:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/drivers_routes.py:57:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/drivers_routes.py:64:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/drivers_routes.py:60:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/drivers_routes.py:65:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/drivers_routes.py:70:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/drivers_routes.py:87:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/drivers_routes.py:79:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/drivers_routes.py:88:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/drivers_routes.py:93:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/drivers_routes.py:104:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/drivers_routes.py:96:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/drivers_routes.py:105:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+************* Module app.routes.api.admin.vehicles_routes
+app/routes/api/admin/vehicles_routes.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/routes/api/admin/vehicles_routes.py:23:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/vehicles_routes.py:36:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/vehicles_routes.py:37:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/vehicles_routes.py:43:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/vehicles_routes.py:48:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/vehicles_routes.py:49:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/vehicles_routes.py:55:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/vehicles_routes.py:62:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/vehicles_routes.py:58:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/vehicles_routes.py:63:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/vehicles_routes.py:68:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/vehicles_routes.py:94:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/vehicles_routes.py:88:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/vehicles_routes.py:95:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/vehicles_routes.py:100:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/vehicles_routes.py:112:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/vehicles_routes.py:106:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/vehicles_routes.py:113:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+************* Module app.routes.api.admin.tariffs_settings_routes
+app/routes/api/admin/tariffs_settings_routes.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/routes/api/admin/tariffs_settings_routes.py:12:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/tariffs_settings_routes.py:19:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/tariffs_settings_routes.py:17:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/tariffs_settings_routes.py:20:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/tariffs_settings_routes.py:25:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/tariffs_settings_routes.py:36:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/tariffs_settings_routes.py:37:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+************* Module app.routes.api.admin.vouchers_routes
+app/routes/api/admin/vouchers_routes.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/routes/api/admin/vouchers_routes.py:30:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/vouchers_routes.py:46:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/vouchers_routes.py:47:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/vouchers_routes.py:30:0: R0911: Too many return statements (7/6) (too-many-return-statements)
+app/routes/api/admin/vouchers_routes.py:53:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/vouchers_routes.py:57:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/vouchers_routes.py:58:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/vouchers_routes.py:67:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/vouchers_routes.py:74:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/vouchers_routes.py:70:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/vouchers_routes.py:75:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/vouchers_routes.py:80:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/vouchers_routes.py:105:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/vouchers_routes.py:99:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/vouchers_routes.py:106:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app/routes/api/admin/vouchers_routes.py:111:0: C0116: Missing function or method docstring (missing-function-docstring)
+app/routes/api/admin/vouchers_routes.py:122:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app/routes/api/admin/vouchers_routes.py:116:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app/routes/api/admin/vouchers_routes.py:123:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+************* Module app.routes.api.admin.admin_routes
+app/routes/api/admin/admin_routes.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+************* Module app.routes.pages.pages_routes
+app/routes/pages/pages_routes.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+************* Module app.models.driver
+app/models/driver.py:27:0: C0301: Line too long (108/100) (line-too-long)
+app/models/driver.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/models/driver.py:15:0: C0115: Missing class docstring (missing-class-docstring)
+app/models/driver.py:15:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module app.models.vehicle
+app/models/vehicle.py:26:0: C0301: Line too long (113/100) (line-too-long)
+app/models/vehicle.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/models/vehicle.py:13:0: C0115: Missing class docstring (missing-class-docstring)
+app/models/vehicle.py:13:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module app.models.tariff_settings
+app/models/tariff_settings.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/models/tariff_settings.py:14:0: C0115: Missing class docstring (missing-class-docstring)
+app/models/tariff_settings.py:14:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module app.models.voucher
+app/models/voucher.py:26:0: C0301: Line too long (115/100) (line-too-long)
+app/models/voucher.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/models/voucher.py:13:0: C0115: Missing class docstring (missing-class-docstring)
+app/models/voucher.py:13:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module app.models.booking
+app/models/booking.py:44:0: C0301: Line too long (122/100) (line-too-long)
+app/models/booking.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/models/booking.py:18:0: C0115: Missing class docstring (missing-class-docstring)
+app/models/booking.py:18:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+************* Module app.models.entity
+app/models/entity.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+app/models/entity.py:8:0: C0115: Missing class docstring (missing-class-docstring)
+app/models/entity.py:8:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+app/models/entity.py:1:0: R0801: Similar lines in 2 files
+==app.db:[26:53]
+==app.services.tariff_settings_service:[29:56]
+            try:
+                default_settings = TariffSettings(
+                    id=1,
+                    base_rate_eur=current_app.config.get("BASE_RATE_EUR", 10.0),
+                    rate_per_km_eur=current_app.config.get("RATE_PER_KM_EUR", 0.85),
+                    rate_per_passenger_eur=current_app.config.get(
+                        "RATE_PER_PASSENGER_EUR", 2.5
+                    ),
+                    rate_per_bag_eur=current_app.config.get("RATE_PER_BAG_EUR", 1.0),
+                    night_surcharge_applies=current_app.config.get(
+                        "NIGHT_SURCHARGE_APPLIES", True
+                    ),
+                    night_surcharge_percentage=current_app.config.get(
+                        "NIGHT_SURCHARGE_PERCENTAGE", 20.0
+                    ),
+                    night_surcharge_start_hour=current_app.config.get(
+                        "NIGHT_SURCHARGE_START_HOUR", 22
+                    ),
+                    night_surcharge_end_hour=current_app.config.get(
+                        "NIGHT_SURCHARGE_END_HOUR", 6
+                    ),
+                    booking_slot_overlap_minutes=current_app.config.get(
+                        "BOOKING_SLOT_OVERLAP_MINUTES", 30
+                    ),
+                )
+                sqlAlchemy.session.add(default_settings)
+                sqlAlchemy.session.commit() (duplicate-code)
+app/models/entity.py:1:0: R0801: Similar lines in 2 files
+==app.routes.api.admin.vehicles_routes:[63:72]
+==app.routes.api.admin.vouchers_routes:[75:84]
+        return jsonify({"error": "Erro interno."}), 500
+
+
+@admin_blueprint.route("/admin/vehicles/<int:vehicle_id>", methods=["PATCH"])
+def admin_update_vehicle_ep(vehicle_id):
+    if not request.is_json:
+        return jsonify({"error": "Pedido deve ser JSON"}), 400
+    data = request.get_json()
+    valid_fields = [ (duplicate-code)
+app/models/entity.py:1:0: R0801: Similar lines in 2 files
+==app.services.bookings_service:[396:401]
+==app.services.vouchers_service:[269:274]
+            return True
+        return False
+    except SQLAlchemyError as e:
+        sqlAlchemy.session.rollback()
+        logger.error( (duplicate-code)
+app/models/entity.py:1:0: R0401: Cyclic import (app.db -> app.models.tariff_settings -> app.models.entity) (cyclic-import)
+
+------------------------------------------------------------------
+Your code has been rated at 8.67/10 (previous run: 8.67/10, +0.00)
