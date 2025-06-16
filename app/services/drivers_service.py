@@ -71,7 +71,7 @@ def create_driver(driver_data: dict) -> Driver:
         raise ValueError("Erro inesperado ao criar motorista.") from e_unexp
 
 
-def get_driver_by_id(driver_id: int) -> Driver | None:
+def get_driver_by_id(driver_id: int):
     """Busca um motorista por ID."""
     try:
         driver = sqlAlchemy.session.query(Driver).filter(Driver.id == driver_id).first()
@@ -96,7 +96,7 @@ def get_all_drivers(only_active: bool = False) -> list[Driver]:
         raise ValueError("Erro de BD ao obter todos os motoristas.") from e
 
 
-def update_driver(driver_id: int, driver_data: dict) -> Driver | None:
+def update_driver(driver_id: int, driver_data: dict):
     """Atualiza dados de um motorista."""
     try:
         driver_to_update = get_driver_by_id(driver_id)
@@ -249,7 +249,7 @@ def create_vehicle(vehicle_data: dict) -> Vehicle:
         raise ValueError("Erro inesperado ao criar veículo.") from e_unexp
 
 
-def get_vehicle_by_id(vehicle_id: int) -> Vehicle | None:
+def get_vehicle_by_id(vehicle_id: int):
     try:
         vehicle = (
             sqlAlchemy.session.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
@@ -262,7 +262,7 @@ def get_vehicle_by_id(vehicle_id: int) -> Vehicle | None:
         raise ValueError("Erro de BD ao obter veículo ID %s." % vehicle_id) from e
 
 
-def get_all_vehicles(status_filter: str | None = None) -> list[Vehicle]:
+def get_all_vehicles(status_filter: str):
     try:
         query = sqlAlchemy.session.query(Vehicle)
         if status_filter and status_filter.strip():
@@ -276,7 +276,7 @@ def get_all_vehicles(status_filter: str | None = None) -> list[Vehicle]:
         raise ValueError("Erro de BD ao obter todos os veículos.") from e
 
 
-def update_vehicle(vehicle_id: int, vehicle_data: dict) -> Vehicle | None:
+def update_vehicle(vehicle_id: int, vehicle_data: dict):
     """Atualiza dados de um veículo."""
     try:
         vehicle_to_update = get_vehicle_by_id(vehicle_id)
