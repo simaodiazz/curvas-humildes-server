@@ -2,7 +2,7 @@
 import logging
 import os
 
-from flask import Flask, make_response
+from flask import Flask, make_response, redirect
 from flask_cors import CORS
 from flask_mail import Mail
 from flask_jwt_extended import JWTManager
@@ -77,14 +77,7 @@ def create_app(config_object_name="config"):
     return app
 
 
-@jwt.expired_token_loader
-def expired_token_callback(jwt_header, jwt_payload):
-    response = make_response('', 401)  # Corpo vazio, apenas status 401
-    response.delete_cookie(app.config.get('JWT_ACCESS_COOKIE_NAME'))  # Nome do teu cookie
-    return response
-
-
-PUBLIC_ENDPOINTS = ["/login", "/login/", "/api/login", "/api/login/"]
+PUBLIC_ENDPOINTS = ["/", "/login", "/login/", "/register", "/register/", "/api/login", "/api/login/", "/api/register", "/api/register/"]
 
 
 @app.before_request
@@ -118,3 +111,32 @@ def require_jwt_for_all_requests():
         return {"msg": "Token de autenticação ausente"}, 401
     except jwt_exceptions.JWTDecodeError:
         return {"msg": "Token inválido"}, 401
+
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    return redirect("/login")
+
+
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    response = make_response('', 401)  # Corpo vazio, apenas status 401
+    response.delete_cookie(app.config.get('JWT_ACCESS_COOKIE_NAME'))  # Nome do teu cookie
+    return redirect('/login')
+
+
+@jwt.unauthorized_loader
+def missing_token_callback(error_string):
+    return redirect('/login')
+
+
+@jwt.needs_fresh_token_loader
+def needs_fresh_token_callback(jwt_header, jwt_payload):
+    return redirect('/login')
+
+
+@jwt.revoked_token_loader
+def revoked_token_callback(jwt_header, jwt_payload):
+    return redirect('/login')
+
+# Dica: trate outras situações também:

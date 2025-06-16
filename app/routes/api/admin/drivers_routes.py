@@ -91,6 +91,7 @@ def admin_update_driver_ep(driver_id):
     try:
         updated_driver = drivers_service.update_driver(driver_id, data)
         if updated_driver:
+            # Limpeza correta do cache memoize ao nível da rota
             flaskCaching.delete_memoized(admin_get_all_drivers_ep)
             flaskCaching.delete_memoized(admin_get_driver_ep, driver_id)
             return jsonify(_serialize_driver_details(updated_driver)), 200

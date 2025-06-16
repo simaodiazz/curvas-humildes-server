@@ -9,10 +9,13 @@ class Configuration:
         "uma_chave_secreta_default_para_desenvolvimento_muito_longa_e_aleatoria"
     )
 
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///data.db")
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "mysql+pymysql://root:password@localhost:3306/db")
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     MAPS_API_PROVIDER = os.environ.get("MAPS_API_PROVIDER", "OPENROUTESERVICE")
+    MAPS_API_KEY = os.environ.get("MAPS_API_KEY", "")
+    VAT_RATE = 23.0
     
     BASE_RATE_EUR = float(os.environ.get("BASE_RATE_EUR", 10.0))
     RATE_PER_KM_EUR = float(os.environ.get("RATE_PER_KM_EUR", 0.85))
@@ -26,13 +29,12 @@ class Configuration:
         "gare do oriente#baixa lisboa": 18.0,
         "sintra#aeroporto lisboa": 45.0,
     }
+
     NIGHT_SURCHARGE_APPLIES = True
     NIGHT_SURCHARGE_PERCENTAGE = 20.0
     NIGHT_SURCHARGE_START_HOUR = 22
     NIGHT_SURCHARGE_END_HOUR = 6
     BOOKING_SLOT_OVERLAP_MINUTES = 30
-
-    VAT_RATE = 23.0
 
     ALLOWED_BOOKING_STATUSES = [
         "PENDING_CONFIRMATION",

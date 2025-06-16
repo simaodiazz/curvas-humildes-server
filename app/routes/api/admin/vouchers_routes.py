@@ -154,3 +154,25 @@ def admin_get_all_vouchers_with_user_ep():
     except Exception as e:
         logger.error(f"Admin: Erro obter vouchers com user associado: {e}", exc_info=True)
         return jsonify({"error": "Erro interno."}), 500
+
+
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+from flask import jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+@admin_blueprint.route("/admin/vouchers/with_user/me", methods=["GET"])
+@jwt_required()
+def admin_get_all_vouchers_for_current_user():
+    role = get_role()
+    if role not in ("admin", "partner"):
+        return jsonify({"error": "Acesso negado."}), 403
+
+    user_id = get_jwt_identity()
+    
+    try:
+        vouchers = vouchers_service.get_all_vouchers_by_user_id(user_id)
+        return jsonify([_serialize_voucher_details(v) for v in vouchers]), 200
+    except Exception as e:
+        logger.error(f"Admin: Erro obter vouchers com user associado: {e}", exc_info=True)
+        return jsonify({"error": "Erro interno."}), 500

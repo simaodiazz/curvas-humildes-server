@@ -25,9 +25,6 @@ def pagina_login():
     except Exception:
         return render_template("login.html")
 
-@pages_blueprint.route("/")
-def pagina_de_reservas():
-    return render_template("reservas_form.html")
 
 @pages_blueprint.route("/dashboard")
 @jwt_required()
@@ -38,9 +35,24 @@ def painel_dashboard():
     role = get_role()
     if role == "admin":
         return redirect(url_for("pages.painel_admin"))
+    if role == "user":
+        return redirect(url_for("pages.painel_client"))
     elif role == "partner":
         return redirect(url_for("pages.painel_partner"))
     return jsonify({"error": "Acesso negado."}), 403
+
+
+@pages_blueprint.route("/dashboard/client")
+@jwt_required()
+def painel_client():
+    """
+    Painel apenas para user.
+    """
+    role = get_role()
+    if role == "user":
+        return render_template("client.html")
+    return jsonify({"error": "Acesso negado."}), 403
+
 
 @pages_blueprint.route("/dashboard/admin")
 @jwt_required()
@@ -63,3 +75,7 @@ def painel_partner():
     if role == "partner" or role == "admin":
         return render_template("partner.html")
     return jsonify({"error": "Acesso negado."}), 403
+
+@pages_blueprint.route("/register", methods=["GET"])
+def pagina_register():
+    return render_template("register.html")

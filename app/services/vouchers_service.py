@@ -178,3 +178,6 @@ def get_all_vouchers_with_user():
     Retorna todos os vouchers que possuem um usuário associado.
     """
     return sqlAlchemy.session.query(Voucher).filter(Voucher.user_id.isnot(None)).all()
+
+def get_all_vouchers_by_user_id(id):
+    return sqlAlchemy.session.query(Voucher).filter_by(user_id=id).all()

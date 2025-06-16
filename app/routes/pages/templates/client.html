@@ -501,16 +501,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
+    <header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center border-b">
+    <h1 class="text-2xl font-bold tracking-tight">Painel do Cliente</h1>
+    <button 
+        onclick="logout()" 
+        class="py-2 px-5 rounded bg-neutral-200 hover:bg-neutral-100 transition text-neutral-800 font-medium shadow-sm"
+    >
+        Sair
+    </button>
+    </header>
     <div class="page-wrapper">
         <div class="main-content">
             <img src="logo.png" alt="Curvas Humildes Logótipo" class="company-logo"
                  onerror="this.alt='Logótipo Curvas Humildes não encontrado'; this.style.display='none'; console.error('Erro ao carregar logo.png');">
             
-            <a href="https://www.curvashumildes.pt" class="back-to-site-link group">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Voltar ao Site Principal
-            </a>
-
             <div class="form-layout-grid">
                 <div id="budgetSectionFlipWrapper"> 
                     <div class="flip-card" id="budgetFlipCard"> 
@@ -604,6 +608,11 @@
                     </form>
                     <div id="bookingMessage" class="message-box transitionable-element"></div>
                 </div>
+            <div class="container" id="myBookingsSection">
+                <h2 class="text-xl mb-3">🔎 As Minhas Reservas</h2>
+                <div id="myBookingsMessage" class="message-box mt-3 transitionable-element"></div>
+                <div id="myBookingsList" class="transitionable-element" style="overflow-x:auto;"></div>
+            </div>
             </div> </div> <footer class="site-footer">
             <p>&copy; <span id="currentYear"></span> Curvas Humildes. Todos os direitos reservados.</p>
             <p>Este é um formulário de teste para demonstração.</p>
@@ -677,6 +686,37 @@
             { name: "EUA", code: "+1", flag: "🇺🇸" }, { name: "Angola", code: "+244", flag: "🇦🇴" },
             { name: "Moçambique", code: "+258", flag: "🇲🇿" },
         ];
+
+        async function fetchAndShowMyBookings() {
+            showHideElement(myBookingsMessage, false);
+            showHideElement(myBookingsList, false);
+
+            // Extrai o JWT guardado pelo login
+            const token = sessionStorage.getItem('ch_token') || localStorage.getItem('ch_token');
+            if (!token) {
+                showMessage(myBookingsMessage, "Por favor faça login primeiro!", "error");
+                return;
+            }
+
+            try {
+                showMessage(myBookingsMessage, "A procurar reservas...", "info");
+                const response = await fetch(`${API_BASE_URL_BACKEND}/my-bookings`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || "Não foi possível obter reservas.");
+                }
+                const data = await response.json();
+                showHideElement(myBookingsMessage, false);
+                showMyBookingsList(data.bookings);
+            } catch (error) {
+                showMessage(myBookingsMessage, error.message || "Erro ao obter reservas.", "error");
+                showHideElement(myBookingsList, false);
+            }
+        }
 
         function populateCountryCodes() {
             if (!countryCodeSelect) return;
@@ -1121,6 +1161,104 @@
             setBookingSectionActive(false); 
         });
 
+        const myBookingsForm = document.getElementById('myBookingsSearchForm');
+        const myBookingsMessage = document.getElementById('myBookingsMessage');
+        const myBookingsList = document.getElementById('myBookingsList');
+
+        // Função para mostrar reservas
+        function showMyBookingsList(bookings) {
+        if (!bookings || bookings.length === 0) {
+            myBookingsList.innerHTML = '<div class="text-gray-500 text-sm">Sem reservas encontradas.</div>';
+            showHideElement(myBookingsList, true);
+            return;
+        }
+        let html = `
+            <table class="min-w-full text-sm border">
+            <thead>
+                <tr>
+                <th class="p-2 border-b">Data</th>
+                <th class="p-2 border-b">Hora</th>
+                <th class="p-2 border-b">Partida</th>
+                <th class="p-2 border-b">Destino</th>
+                <th class="p-2 border-b">Estado</th>
+                <th class="p-2 border-b">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${bookings.map(b => `
+                <tr>
+                    <td class="p-2 border-b text-center">${b.date ? b.date.split('T')[0] : ''}</td>
+                    <td class="p-2 border-b text-center">${b.time || ''}</td>
+                    <td class="p-2 border-b">${b.pickup_location || ''}</td>
+                    <td class="p-2 border-b">${b.dropoff_location || ''}</td>
+                    <td class="p-2 border-b text-center">${b.status || ''}</td>
+                    <td class="p-2 border-b text-center">${b.total_with_vat != null ? formatCurrency(b.total_with_vat) + ' €' : ''}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+            </table>
+        `;
+        myBookingsList.innerHTML = html;
+        showHideElement(myBookingsList, true);
+        }
+
+        myBookingsForm.addEventListener('submit', async function (evt) {
+        evt.preventDefault();
+        showHideElement(myBookingsMessage, false);
+        showHideElement(myBookingsList, false);
+
+        // Aqui extraímos o JWT guardado pelo login
+        const token = sessionStorage.getItem('ch_token') || localStorage.getItem('ch_token');
+        if (!token) {
+            showMessage(myBookingsMessage, "Por favor faça login primeiro!", "error");
+            return;
+        }
+
+        try {
+            showMessage(myBookingsMessage, "A procurar reservas...", "info");
+            const response = await fetch(`${API_BASE_URL_BACKEND}/my-bookings`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+            });
+            if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text || "Não foi possível obter reservas.");
+            }
+            const data = await response.json();
+            showHideElement(myBookingsMessage, false);
+            showMyBookingsList(data.bookings);
+        } catch (error) {
+            showMessage(myBookingsMessage, error.message || "Erro ao obter reservas.", "error");
+            showHideElement(myBookingsList, false);
+        }
+        });
+
+        function logout() {
+        fetch("/api/logout", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("jwt_token")}`,
+                "Content-Type": "application/json"
+            }
+        })
+        .finally(() => {
+            localStorage.removeItem("jwt_token");
+            window.location.href = "/login"; // Troque a URL se necessário!
+        });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDateTime();
+            populateCountryCodes();
+            [budgetResult, budgetMessage, voucherMessage, bookingMessage].forEach(el => {
+                if(el) el.classList.add('transitionable-element');
+            });
+            setBookingSectionActive(false);
+
+            // --- Adiciona esta linha para atualizar reservas logo ao entrar ---
+            fetchAndShowMyBookings();
+        });
     </script>
 </body>
 </html>

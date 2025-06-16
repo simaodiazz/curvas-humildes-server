@@ -13,8 +13,10 @@ from sqlalchemy.orm import relationship
 import datetime
 from app.db import Model as Base
 
+
 class Booking(Base):
-    __tablename__ = "bookings"
+    __tablename__ = "bookings"  # <--- Corrige para __tablename__
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     passenger_name = Column(String(100), nullable=False)
     passenger_phone = Column(String(20), nullable=True)
@@ -37,6 +39,9 @@ class Booking(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     assigned_driver_id = Column(Integer, ForeignKey("drivers.id"), nullable=True)
     assigned_driver = relationship("Driver", back_populates="bookings")
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user = relationship("User", back_populates="bookings")
+
     def __repr__(self):
         driver_name = self.assigned_driver.first_name if self.assigned_driver else "N/A"
         return f"<Booking(id={self.id}, name='{self.passenger_name}', date='{self.date}', total='{self.total_with_vat}')>"

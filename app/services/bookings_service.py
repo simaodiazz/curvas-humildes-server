@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 from ..db import sqlAlchemy
 from ..models.booking import Booking
+from ..models.user import User
 from .budget_service import calculate_estimated_budget
 from .drivers_service import get_all_drivers, get_driver_by_id
 from .emails_service import send_driver_assignment_email
@@ -96,6 +97,7 @@ def check_availability(
         )
         raise ValueError("Erro inesperado ao verificar disponibilidade.") from e_unexp
 
+
 def create_booking_record(booking_data: dict) -> Booking:
     try:
         passenger_name = booking_data["passengerName"]
@@ -109,8 +111,19 @@ def create_booking_record(booking_data: dict) -> Booking:
         bags_str = booking_data["bags"]
         instructions = booking_data.get("instructions")
         voucher_code_from_frontend = booking_data.get("voucher_code")
+
+        # ---- NOVO: User (por ID) ----
+        user_id = booking_data.get("user_id")
+        user_obj = None
+        if user_id:
+            user_obj = sqlAlchemy.session.query(User).filter_by(id=user_id).first()
+            if not user_obj:
+                raise ValueError(f"Utilizador com id {user_id} não existe.")
+        # -----------------------------
+
         if not passenger_name.strip():
             raise ValueError("Nome do passageiro é obrigatório.")
+
         try:
             date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
             time_obj = datetime.datetime.strptime(time_str, "%H:%M").time()
@@ -121,12 +134,14 @@ def create_booking_record(booking_data: dict) -> Booking:
             raise ValueError(
                 f"Dados de reserva inválidos (data, hora, passageiros, malas ou duração): {e_conv}"
             ) from e_conv
+
         if duration_minutes <= 0:
             raise ValueError("Duração da reserva deve ser positiva.")
         if passengers < 1:
             raise ValueError("Número de passageiros deve ser pelo menos 1.")
         if bags < 0:
             raise ValueError("Número de malas não pode ser negativo.")
+
         budget_calc_data = {
             "passengers": passengers,
             "bags": bags,
@@ -141,6 +156,7 @@ def create_booking_record(booking_data: dict) -> Booking:
         discount_amount_calc = 0.0
         applied_voucher_code_final = None
         validated_voucher_obj = None
+
         if voucher_code_from_frontend and voucher_code_from_frontend.strip():
             try:
                 validated_voucher_obj = validate_voucher_for_use(
@@ -163,11 +179,13 @@ def create_booking_record(booking_data: dict) -> Booking:
                     voucher_code_from_frontend,
                     ve_voucher,
                 )
+
         vat_percentage_calc = current_app.config.get("VAT_RATE", 23.0)
         vat_amount_calc = round(
             final_budget_pre_vat_calc * (vat_percentage_calc / 100.0), 2
         )
         total_with_vat_calc = round(final_budget_pre_vat_calc + vat_amount_calc, 2)
+
         new_booking = Booking(
             passenger_name=passenger_name,
             passenger_phone=passenger_phone,
@@ -187,11 +205,18 @@ def create_booking_record(booking_data: dict) -> Booking:
             total_with_vat=total_with_vat_calc,
             applied_voucher_code=applied_voucher_code_final,
             status="PENDING_CONFIRMATION",
+            # -------- NOVO: associação do user -------
+            user_id=user_obj.id if user_obj else None
+            # ou (melhor se usares instância): user=user_obj
+            # -----------------------------------------
         )
+
         sqlAlchemy.session.add(new_booking)
         sqlAlchemy.session.commit()
+
         if new_booking.applied_voucher_code:
             record_voucher_usage(new_booking.applied_voucher_code)
+
         sqlAlchemy.session.refresh(new_booking)
         logger.info(
             "Reserva criada na BD com ID: %s, Total c/IVA: %s, Voucher: %s",
@@ -199,11 +224,14 @@ def create_booking_record(booking_data: dict) -> Booking:
             new_booking.total_with_vat,
             new_booking.applied_voucher_code,
         )
+
         # Limpa cache de disponibilidade ao criar reserva!
         flaskCaching.delete_memoized(
             check_availability, date_obj, time_obj, duration_minutes
         )
+
         return new_booking
+
     except ValueError as ve:
         sqlAlchemy.session.rollback()
         logger.error("Erro de valor ao criar reserva: %s", ve)
@@ -218,8 +246,9 @@ def create_booking_record(booking_data: dict) -> Booking:
         raise ValueError("Erro de base de dados ao criar a reserva.") from e
     except Exception as e_unexp:
         sqlAlchemy.session.rollback()
-        logger.error("Erro inesperado ao criar reserva: %s", e_unexp, exc_info=True)
+        logger.error("Erro interno inesperado ao criar reserva: %s", e_unexp, exc_info=True)
         raise ValueError("Erro interno inesperado ao criar a reserva.") from e_unexp
+    
 
 def update_booking_status(booking_id: int, new_status: str) -> "Booking | None":
     allowed_statuses = current_app.config.get("ALLOWED_BOOKING_STATUSES", [])
@@ -395,3 +424,44 @@ def delete_booking_by_id(booking_id: int) -> bool:
             exc_info=True,
         )
         raise ValueError("Erro inesperado ao excluir reserva.") from e_unexp
+    
+    
+def update_booking_field(booking_id: int, field: str, value):
+    booking = sqlAlchemy.session.query(Booking).filter_by(id=booking_id).first()
+    if not booking:
+        return None
+    # Conversão de campos
+    if field == "duration_minutes":
+        value = int(value) if value else None
+    elif field in ("passengers", "bags"):
+        value = int(value) if value else None
+    elif field == "date":
+        import datetime
+        value = datetime.date.fromisoformat(value) if value else None
+    elif field == "time":
+        import datetime
+        value = datetime.time.fromisoformat(value) if value else None
+    setattr(booking, field, value)
+    sqlAlchemy.session.commit()
+    sqlAlchemy.session.refresh(booking)
+    return booking
+
+def get_bookings_for_user(user_id: int) -> list[Booking]:
+    """
+    Devolve uma lista de reservas associadas ao user_id fornecido,
+    ordenadas da mais recente para a mais antiga.
+    """
+    try:
+        bookings = (
+            sqlAlchemy.session.query(Booking)
+            .filter(Booking.user_id == user_id)
+            .order_by(Booking.date.desc(), Booking.time.desc())
+            .all()
+        )
+        return bookings
+    except SQLAlchemyError as e:
+        logger.error(f"Erro de BD ao obter reservas do utilizador {user_id}: {e}", exc_info=True)
+        raise ValueError("Erro de base de dados ao obter reservas do utilizador.") from e
+    except Exception as e_unexp:
+        logger.error(f"Erro inesperado ao obter reservas do utilizador {user_id}: {e_unexp}", exc_info=True)
+        raise ValueError("Erro inesperado ao obter reservas do utilizador.") from e_unexp
