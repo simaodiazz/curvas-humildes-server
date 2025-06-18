@@ -171,3 +171,45 @@ def handle_submit_booking():
     except Exception as e:
         logger.error(f"Erro inesperado em /submit-booking: {e}", exc_info=True)
         return jsonify({"error": "Erro interno inesperado."}), 500  
+
+
+@handlers_blueprint.route('/validate-voucher', methods=['POST'])
+def handle_validate_voucher():
+    if not request.is_json:
+        return jsonify({"error": "O pedido deve ser em formato JSON"}), 400
+    data = request.get_json()
+    voucher_code = data.get('voucher_code')
+    original_budget_pre_vat_str = data.get('original_budget_pre_vat')
+
+    if not voucher_code or original_budget_pre_vat_str is None:
+        return jsonify({"error": "Campos 'voucher_code' e 'original_budget_pre_vat' são obrigatórios."}), 400
+    
+    try:
+        original_budget_pre_vat = float(original_budget_pre_vat_str)
+        if original_budget_pre_vat < 0:
+             raise ValueError("Orçamento original (s/IVA) não pode ser negativo.")
+    except ValueError:
+        return jsonify({"error": "Valor de 'original_budget_pre_vat' inválido."}), 400
+
+    try:
+        valid_voucher = vouchers_service.validate_voucher_for_use(voucher_code, original_budget_pre_vat)
+        final_budget_pre_vat, discount_amount = vouchers_service.apply_voucher_to_budget(original_budget_pre_vat, valid_voucher)
+        
+        vat_percentage = current_app.config.get('VAT_RATE', 23.0)
+        vat_amount_final = round(final_budget_pre_vat * (vat_percentage / 100.0), 2)
+        total_with_vat_final = round(final_budget_pre_vat + vat_amount_final, 2)
+
+        return jsonify({
+            "message": f"Voucher '{valid_voucher.code}' válido e aplicado!", "valid": True,
+            "voucher_code": valid_voucher.code,
+            "original_budget_pre_vat": original_budget_pre_vat, "discount_amount": discount_amount,
+            "final_budget_pre_vat": final_budget_pre_vat, "vat_percentage": vat_percentage,
+            "vat_amount": vat_amount_final, "total_with_vat": total_with_vat_final,
+            "description": f"Desconto de {valid_voucher.discount_value}{'%' if valid_voucher.discount_type == 'PERCENTAGE' else ' EUR'} aplicado."
+        }), 200
+    except ValueError as ve:
+        logger.warning(f"Falha na validação do voucher '{voucher_code}': {ve}")
+        return jsonify({"error": str(ve), "valid": False}), 400
+    except Exception as e:
+        logger.error(f"Erro inesperado ao validar voucher '{voucher_code}': {e}", exc_info=True)
+        return jsonify({"error": "Erro interno ao validar o voucher."}), 500
