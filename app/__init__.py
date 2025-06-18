@@ -77,7 +77,12 @@ def create_app(config_object_name="config"):
     return app
 
 
-PUBLIC_ENDPOINTS = ["/", "/login", "/login/", "/register", "/register/", "/api/login", "/api/login/", "/api/register", "/api/register/"]
+PUBLIC_ENDPOINTS = [
+    "/", 
+    "/login", 
+    "/login/", "/register", "/register/", 
+    "/api/login", "/api/login/", "/api/register", 
+    "/api/register/", "/reserve"]
 
 
 @app.before_request

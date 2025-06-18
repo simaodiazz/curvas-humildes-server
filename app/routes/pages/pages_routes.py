@@ -1,7 +1,6 @@
 from logging import getLogger
 from flask import Blueprint, render_template, jsonify, redirect, url_for
-from flask_jwt_extended import jwt_required, get_jwt, verify_jwt_in_request
-from ...models.user import User
+from flask_jwt_extended import jwt_required, verify_jwt_in_request
 from ..authentication_routes import get_role
 
 pages_blueprint = Blueprint(
@@ -12,8 +11,19 @@ pages_blueprint = Blueprint(
 )
 logger = getLogger(__name__)
 
+
+@pages_blueprint.route("/reserve", methods=["GET"])
+def reserve_page():
+    """
+    Se o usuário já estiver autenticado, redireciona para /dashboard,
+    que por sua vez redireciona para o painel correto.
+    Senão, exibe o login normalmente.
+    """
+    return render_template("reserve.html")
+
+
 @pages_blueprint.route("/login", methods=["GET"])
-def pagina_login():
+def login_page():
     """
     Se o usuário já estiver autenticado, redireciona para /dashboard,
     que por sua vez redireciona para o painel correto.
