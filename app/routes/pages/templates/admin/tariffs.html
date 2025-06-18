@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel Tarifas | Gestão de Tarifas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <!-- Header fake -->
+  <header class="bg-white shadow-sm py-3 px-8 flex justify-between items-center">
+    <button onclick="history.back()"
+      class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 shadow transition">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Voltar ao Painel
+    </button>
+    <h1 class="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+      <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M3 10v10a1 1 0 001 1h16a1 1 0 001-1V10"/><path d="M16 2H8a1 1 0 00-1 1v5a1 1 0 001 1h8a1 1 0 001-1V3a1 1 0 00-1-1z"/>
+      </svg>
+      Gestão de Tarifas
+    </h1>
+    <div></div>
+  </header>
+
+  <main class="flex-1 w-full max-w-6xl mx-auto px-4 py-10">
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <div></div>
+        <button id="refreshTariffsBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Recarregar Tarifas
+        </button>
+      </div>
+      <div id="adminTariffMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <div id="loadingTariffsIndicator" class="hidden flex justify-center py-4">
+        <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      </div>
+    <form id="updateTariffForm" class="flex flex-col gap-8 bg-white bg-opacity-90 p-6 rounded-2xl shadow-lg ring-1 ring-indigo-100">
+
+        <!-- Preços base -->
+        <fieldset class="grid grid-cols-1 md:grid-cols-2 gap-7 border-b pb-7">
+            <legend class="col-span-full mb-3 text-lg font-bold text-indigo-700">Tarifas Base</legend>
+            
+            <div class="flex flex-col gap-2">
+            <label for="base_rate_eur" class="font-medium text-gray-700">Tarifa Base Inicial (€)</label>
+            <input type="number" id="base_rate_eur" placeholder="Ex: 3.50" step="0.01" min="0" required
+                class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white text-sm shadow-inner transition">
+            </div>
+            <div class="flex flex-col gap-2">
+            <label for="rate_per_km_eur" class="font-medium text-gray-700">Tarifa por Km (€)</label>
+            <input type="number" id="rate_per_km_eur" placeholder="Ex: 1.20" step="0.01" min="0" required
+                class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white text-sm shadow-inner transition">
+            </div>
+            <div class="flex flex-col gap-2">
+            <label for="rate_per_passenger_eur" class="font-medium text-gray-700">Por Passageiro Extra (€)</label>
+            <input type="number" id="rate_per_passenger_eur" placeholder="Ex: 2.00" step="0.01" min="0" required
+                class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white text-sm shadow-inner transition">
+            </div>
+            <div class="flex flex-col gap-2">
+            <label for="rate_per_bag_eur" class="font-medium text-gray-700">Por Mala (€)</label>
+            <input type="number" id="rate_per_bag_eur" placeholder="Ex: 1.50" step="0.01" min="0" required
+                class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white text-sm shadow-inner transition">
+            </div>
+        </fieldset>
+        
+        <!-- Sobretaxa noturna -->
+        <fieldset class="grid grid-cols-1 md:grid-cols-3 gap-7 border-b pb-7 pt-4">
+            <legend class="col-span-full mb-3 text-lg font-bold text-indigo-700">Sobretaxa Noturna <span class="text-xs text-gray-400 font-normal">(opcional)</span></legend>
+            
+            <div class="flex flex-row gap-3 items-center mt-1">
+            <input type="checkbox" id="night_surcharge_applies" class="accent-indigo-600 w-5 h-5">
+            <label for="night_surcharge_applies" class="font-medium text-gray-700">Ativar Sobretaxa Noturna</label>
+            </div>
+            <div class="flex flex-col gap-2">
+            <label for="night_surcharge_percentage" class="font-medium text-gray-700">Percentagem (%)</label>
+            <input type="number" id="night_surcharge_percentage" placeholder="Ex: 20" step="0.1" min="0" max="100"
+                class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white text-sm shadow-inner transition">
+            </div>
+            <div class="flex flex-row gap-3">
+            <div class="flex flex-col gap-2 w-1/2">
+                <label for="night_surcharge_start_hour" class="font-medium text-gray-700">Início (h)</label>
+                <input type="number" id="night_surcharge_start_hour" placeholder="0-23" min="0" max="23"
+                class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white text-sm shadow-inner transition">
+            </div>
+            <div class="flex flex-col gap-2 w-1/2">
+                <label for="night_surcharge_end_hour" class="font-medium text-gray-700">Fim (h)</label>
+                <input type="number" id="night_surcharge_end_hour" placeholder="0-23" min="0" max="23"
+                class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white text-sm shadow-inner transition">
+            </div>
+            </div>
+        </fieldset>
+
+        <!-- Avançado/config geral -->
+        <fieldset class="grid grid-cols-1 md:grid-cols-2 gap-7 pt-5">
+            <legend class="col-span-full mb-3 text-lg font-bold text-indigo-700">Configuração Avançada</legend>
+            <div class="flex flex-col gap-2">
+            <label for="booking_slot_overlap_minutes" class="font-medium text-gray-700">Margem Sobreposição Reservas (min)</label>
+            <input type="number" id="booking_slot_overlap_minutes" placeholder="Ex: 10" min="0" required
+                class="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white text-sm shadow-inner transition w-full md:w-60">
+            <span class="text-xs text-gray-400 mt-1">Tempo mínimo entre reservas consecutivas</span>
+            </div>
+            <div class="flex flex-col justify-end">
+            <label class="font-medium text-gray-700" style="visibility:hidden;">-</label>
+            <button type="submit" class="self-start px-6 py-2 bg-gradient-to-r from-green-500 to-green-700 hover:scale-105 text-white rounded-xl shadow-lg text-sm font-bold transition">
+                Guardar Alterações
+            </button>
+            <span class="text-xs text-gray-500 ml-2 mt-3">Última atualização: <span id="tariffsUpdatedAt">N/A</span></span>
+            </div>
+        </fieldset>
+    </form>
+  </main>
+<script>
+const TARIFFS_API = "/admin/settings/tariffs";
+const tariffToken = localStorage.getItem('access_token');
+
+function showTariffMsg(msg, type="info") {
+  const el = document.getElementById("adminTariffMessage");
+  el.textContent = msg;
+  el.classList.remove("hidden", "text-red-700", "border-red-200", "bg-red-50");
+  if(type === "error")
+    el.classList.add("text-red-700", "border-red-200", "bg-red-50");
+  else
+    el.classList.remove("text-red-700", "border-red-200", "bg-red-50");
+  setTimeout(() => el.classList.add("hidden"), 3500);
+}
+
+function showTariffLoading(show) {
+  document.getElementById("loadingTariffsIndicator").classList.toggle("hidden", !show);
+}
+
+function fillTariffForm(data) {
+  document.getElementById("base_rate_eur").value = data.base_rate_eur ?? "";
+  document.getElementById("rate_per_km_eur").value = data.rate_per_km_eur ?? "";
+  document.getElementById("rate_per_passenger_eur").value = data.rate_per_passenger_eur ?? "";
+  document.getElementById("rate_per_bag_eur").value = data.rate_per_bag_eur ?? "";
+  document.getElementById("night_surcharge_applies").checked = !!data.night_surcharge_applies;
+  document.getElementById("night_surcharge_percentage").value = data.night_surcharge_percentage ?? "";
+  document.getElementById("night_surcharge_start_hour").value = data.night_surcharge_start_hour ?? "";
+  document.getElementById("night_surcharge_end_hour").value = data.night_surcharge_end_hour ?? "";
+  document.getElementById("booking_slot_overlap_minutes").value = data.booking_slot_overlap_minutes ?? "";
+  document.getElementById("tariffsUpdatedAt").textContent = data.updated_at 
+    ? new Date(data.updated_at).toLocaleString("pt-PT") : "N/A";
+  toggleNightFields();
+}
+
+function toggleNightFields() {
+  const enabled = document.getElementById("night_surcharge_applies").checked;
+  [
+    "night_surcharge_percentage",
+    "night_surcharge_start_hour",
+    "night_surcharge_end_hour"
+  ].forEach(id => {
+    let el = document.getElementById(id);
+    el.disabled = !enabled;
+    if(enabled){ el.classList.remove("text-gray-400"); }
+    else { el.classList.add("text-gray-400"); }
+  });
+}
+
+function loadTariffs() {
+  showTariffLoading(true);
+  fetch(TARIFFS_API, {
+    method: "GET",
+    headers: { Authorization: "Bearer " + tariffToken }
+  }).then(r => r.json().then(j => ({status:r.status, body:j})))
+    .then(({status, body}) => {
+      showTariffLoading(false);
+      if(status !== 200) throw new Error(body.error || "Erro ao carregar tarifas");
+      fillTariffForm(body);
+    })
+    .catch(e => {
+      showTariffLoading(false);
+      showTariffMsg(e.message, "error");
+      fillTariffForm({});
+    });
+}
+
+// REFRESH Button
+document.getElementById("refreshTariffsBtn").addEventListener("click", function(){ loadTariffs(); });
+
+// Night Surcharge Enable/Disable
+document.getElementById("night_surcharge_applies").addEventListener("change", toggleNightFields);
+
+// UPDATE/PATCH tarifas
+document.getElementById("updateTariffForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  // Coleta campos
+  const data = {
+    base_rate_eur: parseFloat(document.getElementById("base_rate_eur").value || 0),
+    rate_per_km_eur: parseFloat(document.getElementById("rate_per_km_eur").value || 0),
+    rate_per_passenger_eur: parseFloat(document.getElementById("rate_per_passenger_eur").value || 0),
+    rate_per_bag_eur: parseFloat(document.getElementById("rate_per_bag_eur").value || 0),
+    night_surcharge_applies: document.getElementById("night_surcharge_applies").checked,
+    night_surcharge_percentage: document.getElementById("night_surcharge_applies").checked
+      ? parseFloat(document.getElementById("night_surcharge_percentage").value || 0)
+      : null,
+    night_surcharge_start_hour: document.getElementById("night_surcharge_applies").checked
+      ? parseInt(document.getElementById("night_surcharge_start_hour").value || 0)
+      : null,
+    night_surcharge_end_hour: document.getElementById("night_surcharge_applies").checked
+      ? parseInt(document.getElementById("night_surcharge_end_hour").value || 0)
+      : null,
+    booking_slot_overlap_minutes: parseInt(document.getElementById("booking_slot_overlap_minutes").value || 0)
+  };
+  showTariffLoading(true);
+  fetch(TARIFFS_API, {
+    method: "PUT",
+    headers: {
+      "Authorization": "Bearer " + tariffToken,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  }).then(r => r.json().then(j => ({status:r.status, body:j})))
+    .then(({status, body}) => {
+      showTariffLoading(false);
+      if(status !== 200) throw new Error(body.error || "Erro ao atualizar tarifas");
+      fillTariffForm(body);
+      showTariffMsg("Definições de tarifas atualizadas com sucesso.");
+    })
+    .catch(e => {
+      showTariffLoading(false);
+      showTariffMsg(e.message, "error");
+    });
+});
+
+// Inicializa ao arrancar
+window.addEventListener("DOMContentLoaded", loadTariffs);
+</script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel de Motoristas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="bg-white shadow-sm py-3 px-8 flex justify-between items-center">
+    <button onclick="history.back()"
+      class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 shadow transition">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Voltar ao Painel
+    </button>
+    <h1 class="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+      <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 12c2.25 0 4.09-1.84 4.09-4.09 0-2.24-1.84-4.08-4.09-4.08s-4.08 1.84-4.08 4.08c0 2.25 1.83 4.09 4.08 4.09zm0 2.54c-2.67 0-8 1.34-8 4.01V22h16v-3.45c0-2.67-5.33-4.01-8-4.01z"/>
+      </svg>
+      Gestão de Motoristas
+    </h1>
+    <div></div>
+  </header>
+
+  <main class="flex-1 w-full max-w-7xl mx-auto px-4 py-10">
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <!-- Top: Título e botão atualizar -->
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <div></div>
+        <button id="refreshDriversBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Atualizar Lista
+        </button>
+      </div>
+
+      <!-- Mensagem de feedback -->
+      <div id="adminDriverMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      
+      <!-- Formulário adicionar motorista -->
+      <form id="addDriverForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white bg-opacity-80 p-4 rounded-xl shadow mb-6">
+        <input type="text" id="first_name" name="first_name" placeholder="Nome Próprio" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="text" id="last_name" name="last_name" placeholder="Apelido" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="email" id="email" name="email" placeholder="Email" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="tel" id="phone_number" name="phone_number" placeholder="Telefone" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <div class="col-span-full flex items-center gap-2 ml-1">
+          <input id="newDriverIsActive" name="is_active" type="checkbox" checked class="accent-indigo-600 w-5 h-5">
+          <label for="newDriverIsActive" class="text-sm text-gray-700">Ativo</label>
+        </div>
+        <button type="submit" class="col-span-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 hover:scale-105 text-white rounded-xl shadow-lg text-sm font-bold transition">
+          + Adicionar Motorista
+        </button>
+      </form>
+
+      <!-- Loading spinner -->
+      <div id="loadingDriversIndicator" class="hidden flex justify-center mb-3">
+        <div class="w-10 h-10 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+      </div>
+
+      <!-- Tabela Motoristas -->
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Nome Próprio</th>
+              <th class="p-3 font-bold">Apelido</th>
+              <th class="p-3 font-bold">Email</th>
+              <th class="p-3 font-bold">Telefone</th>
+              <th class="p-3 font-bold">Status</th>
+              <th class="p-3 font-bold">Criado Em</th>
+              <th class="p-3 font-bold">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="driversTableBody" class="divide-y divide-gray-100">
+            <!-- Preenche com JS -->
+          </tbody>
+        </table>
+      </div>
+      <div id="noDriversMessage" class="hidden text-center text-gray-400 py-6">Nenhum motorista encontrado.</div>
+    </section>
+  </main>
+</body>
+<script>
+    const API_BASE = "/admin/drivers";
+    const token = localStorage.getItem('access_token');
+
+    function showDriverMessage(msg, type="info") {
+    const el = document.getElementById("adminDriverMessage");
+    el.textContent = msg;
+    el.classList.remove("hidden", "text-red-700", "border-red-200", "bg-red-50");
+    if(type === "error") {
+        el.classList.add("text-red-700", "border-red-200", "bg-red-50");
+    } else {
+        el.classList.remove("text-red-700", "border-red-200", "bg-red-50");
+    }
+    setTimeout(() => { el.classList.add("hidden"); }, 3800);
+    }
+
+    function showLoading(show) {
+    document.getElementById("loadingDriversIndicator").classList.toggle("hidden", !show);
+    }
+
+    function refreshDriversTable() {
+    showLoading(true);
+    fetch(API_BASE, {
+        method: "GET",
+        headers: { Authorization: "Bearer " + token }
+    })
+        .then(r => r.json().then(j => ({status: r.status, body: j})))
+        .then(({status, body}) => {
+        showLoading(false);
+        if (status !== 200) throw new Error(body.error || "Erro ao carregar");
+
+        const tbody = document.getElementById("driversTableBody");
+        tbody.innerHTML = "";
+        (body || []).forEach(driver => {
+            tbody.appendChild(driverRow(driver));
+        });
+
+        document.getElementById("noDriversMessage").classList.toggle("hidden", (body||[]).length > 0);
+        })
+        .catch(e => {
+        showLoading(false);
+        showDriverMessage(e.message, "error");
+        document.getElementById("noDriversMessage").classList.remove("hidden");
+        });
+    }
+
+    function driverRow(driver) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+        <td class="p-2">${driver.id}</td>
+        <td class="p-2">${driver.first_name || ""}</td>
+        <td class="p-2">${driver.last_name || ""}</td>
+        <td class="p-2">${driver.email || ""}</td>
+        <td class="p-2">${driver.phone_number || ""}</td>
+        <td class="p-2">
+        <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" ${driver.is_active ? "checked" : ""} class="accent-indigo-600 w-5 h-5 status-toggle" data-id="${driver.id}">
+            <span class="ml-1 text-sm">${driver.is_active ? "Ativo" : "Inativo"}</span>
+        </label>
+        </td>
+        <td class="p-2">${driver.created_at ? new Date(driver.created_at).toLocaleString("pt-PT") : ""}</td>
+        <td class="p-2 flex gap-2">
+        <button class="deleteDriverBtn px-3 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 text-xs font-bold border border-red-200" data-id="${driver.id}">
+            Remover
+        </button>
+        </td>
+    `;
+    return tr;
+    }
+
+    // ADD DRIVER
+    document.getElementById("addDriverForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        first_name: form.first_name.value.trim(),
+        last_name: form.last_name.value.trim(),
+        email: form.email.value.trim(),
+        phone_number: form.phone_number.value.trim(),
+        is_active: form.is_active.checked,
+    };
+    showLoading(true);
+    fetch(API_BASE, {
+        method: "POST",
+        headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+        .then(r => r.json().then(j => ({status:r.status, body: j})))
+        .then(({status, body}) => {
+        showLoading(false);
+        if(status !== 201) throw new Error(body.error || "Erro ao adicionar motorista");
+        showDriverMessage("Motorista adicionado com sucesso.");
+        form.reset();
+        refreshDriversTable();
+        })
+        .catch(e => {
+        showLoading(false);
+        showDriverMessage(e.message, "error");
+        });
+    });
+
+    // REFRESH BUTTON
+    document.getElementById("refreshDriversBtn").addEventListener("click", refreshDriversTable);
+
+    // Delegação dinâmico: toggles ativo e apagar
+    document.getElementById("driversTableBody").addEventListener("click", function(e){
+    // Remover motorista
+    if (e.target.classList.contains("deleteDriverBtn")) {
+        const id = e.target.dataset.id;
+        if (!confirm(`Remover motorista ID ${id}?`)) return;
+        showLoading(true);
+        fetch(`${API_BASE}/${id}`, { 
+        method: "DELETE", 
+        headers: { Authorization: "Bearer " + token } 
+        })
+        .then(r => {
+            showLoading(false);
+            if(r.status === 204){ 
+            showDriverMessage("Motorista removido."); 
+            refreshDriversTable();
+            }
+            else return r.json().then(b => { throw new Error(b.error || "Erro ao remover motorista") });
+        })
+        .catch(e => {
+            showLoading(false);
+            showDriverMessage(e.message, "error");
+        });
+    }
+    // Toggle ativo/inativo
+    if (e.target.classList.contains("status-toggle")) {
+        const id = e.target.dataset.id;
+        const is_active = e.target.checked;
+        showLoading(true);
+        fetch(`${API_BASE}/${id}`, {
+        method: "PATCH",
+        headers: {
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ is_active })
+        })
+        .then(r => r.json().then(b => ({status:r.status, body:b})))
+        .then(({status, body})=>{
+            showLoading(false);
+            if (status !== 200) throw new Error(body.error || "Erro ao atualizar status");
+            showDriverMessage("Estado atualizado.");
+            refreshDriversTable();
+        })
+        .catch(e => {
+            showLoading(false);
+            showDriverMessage(e.message, "error");
+            // se erro no PATCH, tenta repor visual!
+            setTimeout(refreshDriversTable, 800);
+        });
+    }
+    });
+
+    window.addEventListener("DOMContentLoaded", refreshDriversTable);
+</script>
+</html>

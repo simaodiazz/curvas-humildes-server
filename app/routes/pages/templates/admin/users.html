@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestão de Utilizadores</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <!-- Header idêntico ao do painel -->
+  <header class="bg-white shadow-sm py-3 px-8 flex justify-between items-center">
+    <button onclick="window.history.back()"
+      class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 shadow transition">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Voltar ao Painel
+    </button>
+    <h1 class="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+      <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="7" r="4" />
+        <path d="M2 21v-2a4 4 0 014-4h12a4 4 0 014 4v2" />
+      </svg>
+      Gestão de Utilizadores
+    </h1>
+    <div></div>
+  </header>
+  <main class="flex-1 w-full max-w mx-auto px-4 py-10">
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <div></div>
+        <button id="refreshUsersBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Atualizar Lista
+        </button>
+      </div>
+      <div id="adminUserMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <form id="addUserForm" autocomplete="off" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white bg-opacity-80 p-4 rounded-xl shadow mb-6">
+        <input type="text" id="newUserName" name="name" placeholder="Nome" required
+          class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="email" id="newUserEmail" name="email" placeholder="Email"
+          class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="text" id="newUserPhone" name="phone_number" placeholder="Telefone"
+          class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <select id="newUserRole" name="role" required
+          class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+          <option value="partner" selected>Partner</option>
+          <option value="admin">Administrador</option>
+        </select>
+        <input type="password" name="password" id="newUserPassword" placeholder="Palavra-passe" required minlength="6"
+          class="col-span-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <button type="submit"
+          class="col-span-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 hover:scale-105 text-white rounded-xl shadow-lg text-sm font-bold transition">
+          + Adicionar Utilizador
+        </button>
+      </form>
+      <div id="loadingUsersIndicator" class="hidden flex justify-center py-4">
+        <div class="w-10 h-10 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Nome</th>
+              <th class="p-3 font-bold">Email</th>
+              <th class="p-3 font-bold">Telefone</th>
+              <th class="p-3 font-bold">Perfil</th>
+              <th class="p-3 font-bold">Criado Em</th>
+              <th class="p-3 font-bold">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <div id="noUsersMessage" class="hidden text-center text-gray-400 py-6">Nenhum utilizador encontrado.</div>
+    </section>
+  </main>
+  <script>
+    // Configuração: SEU JWT aqui (exemplo: Armazene true token do login do admin)
+    const JWT = localStorage.getItem('jwt') || '';
+
+    function showUserMessage(msg, type='info') {
+      const msgDiv = document.getElementById("adminUserMessage");
+      msgDiv.textContent = msg;
+      msgDiv.classList.remove("hidden");
+      msgDiv.classList.remove("border-red-300", "bg-red-50", "text-red-900");
+      if(type === 'error') {
+        msgDiv.classList.add("border-red-300", "bg-red-50", "text-red-900");
+      }
+      setTimeout(() => msgDiv.classList.add("hidden"), 3500);
+    }
+    function showLoading(show=true) {
+      document.getElementById("loadingUsersIndicator").classList.toggle("hidden", !show);
+    }
+
+    async function loadUsers() {
+      showLoading(true);
+      document.getElementById("noUsersMessage").classList.add("hidden");
+      const tbody = document.getElementById("usersTableBody");
+      tbody.innerHTML = "";
+      let data = [];
+      try {
+        const res = await fetch("/admin/users", {
+          headers: { Authorization: "Bearer " + JWT }
+        });
+        data = await res.json();
+        if(res.status !== 200) throw new Error(data.error || "Erro ao carregar utilizadores");
+      } catch (e) {
+        showUserMessage(e.message, 'error');
+        showLoading(false);
+        return;
+      }
+      showLoading(false);
+      if (data.length === 0) {
+        document.getElementById("noUsersMessage").classList.remove("hidden");
+        return;
+      }
+      data.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3">${user.id}</td>
+          <td class="p-3">${user.name}</td>
+          <td class="p-3">${user.email || ''}</td>
+          <td class="p-3">${user.phone_number || ''}</td>
+          <td class="p-3 capitalize">${user.role || ''}</td>
+          <td class="p-3">${user.created_at ? (user.created_at.split('T')[0]) : ''}</td>
+          <td class="p-3 flex gap-2">
+            <button onclick="deleteUser(${user.id})" class="px-3 py-1 text-xs text-white bg-red-500 hover:bg-red-700 rounded shadow">Remover</button>
+            <button onclick="resetUserPassword(${user.id})" class="px-3 py-1 text-xs text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded shadow">Reset PW</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("refreshUsersBtn").onclick = loadUsers;
+
+    document.getElementById("addUserForm").onsubmit = async function(e){
+      e.preventDefault();
+      const form = e.target;
+      const userData = {
+        name: form.name.value,
+        email: form.email.value,
+        phone_number: form.phone_number.value,
+        password: form.password.value,
+        role: form.role.value
+      };
+      try {
+        const res = await fetch("/admin/users", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + JWT,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(userData)
+        });
+        const data = await res.json();
+        if(res.status !== 201) {
+          showUserMessage(data.error || "Erro ao adicionar", 'error');
+          return;
+        }
+        showUserMessage("Utilizador adicionado com sucesso", "info");
+        form.reset();
+        setTimeout(loadUsers, 400);
+      } catch (e) {
+        showUserMessage("Erro de comunicação: " + e.message, "error");
+      }
+    };
+
+    async function deleteUser(id) {
+      if(!confirm("Tem a certeza que deseja remover este utilizador?")) return;
+      try {
+        const res = await fetch("/admin/users/"+id, {
+          method: "DELETE",
+          headers: { Authorization: "Bearer " + JWT }
+        });
+        const resp = await res.json();
+        if(res.status !== 200)
+          showUserMessage(resp.error || "Erro ao remover", 'error');
+        else
+          showUserMessage("Utilizador removido!", 'info');
+        loadUsers();
+      } catch (e) { showUserMessage("Erro ao remover: "+e.message, 'error'); }
+    }
+
+    async function resetUserPassword(id) {
+      const newPassword = prompt("Nova palavra-passe (mín 6 chars):");
+      if(!newPassword || newPassword.length < 6) {
+        showUserMessage("Palavra-passe inválida.", "error");
+        return;
+      }
+      try {
+        const res = await fetch(`/admin/users/${id}/password`, {
+          method: "PUT",
+          headers: {
+            Authorization: "Bearer "+JWT,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ new_password: newPassword })
+        });
+        const resp = await res.json();
+        if(res.status !== 200)
+          showUserMessage(resp.error || "Erro no reset.", 'error');
+        else
+          showUserMessage("Palavra-passe redefinida!", 'info');
+      } catch(e) {
+        showUserMessage("Erro ao redefinir password: " + e.message, 'error');
+      }
+    }
+
+    // Inicialização automática
+    loadUsers();
+  </script>
+</body>
+</html>

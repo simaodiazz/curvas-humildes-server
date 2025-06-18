@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel Frota | Gestão de Veículos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <!-- Header fake -->
+  <header class="bg-white shadow-sm py-3 px-8 flex justify-between items-center">
+    <button onclick="history.back()"
+      class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 shadow transition">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Voltar ao Painel
+    </button>
+    <h1 class="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+      <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M3 13V10a8 8 0 0116 0v3"/><rect x="7" y="13" width="10" height="5" rx="2" /><circle cx="12" cy="16" r="1" />
+      </svg>
+      Gestão de Frota (Veículos)
+    </h1>
+    <div></div>
+  </header>
+  <main class="flex-1 w-full max-w-7xl mx-auto px-4 py-10">
+    <!-- Gestão de Frota (Veículos) -->
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <div></div>
+        <button id="refreshVehiclesBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Atualizar Lista
+        </button>
+      </div>
+      <div id="adminVehicleMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <form id="addVehicleForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white bg-opacity-80 p-4 rounded-xl shadow mb-6">
+        <input type="text" id="newVehicleLicensePlate" name="license_plate" placeholder="Matrícula" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="text" id="newVehicleMake" name="make" placeholder="Marca" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="text" id="newVehicleModel" name="model" placeholder="Modelo" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="number" id="newVehicleYear" name="year" placeholder="Ano" min="1980" max="2099" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="number" id="newVehicleCapacityPassengers" name="capacity_passengers" placeholder="Capac. Passageiros" min="1" value="4" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <input type="number" id="newVehicleCapacityBags" name="capacity_bags" placeholder="Capac. Malas" min="0" value="3" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+        <select id="newVehicleStatus" name="status" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+          <option value="ACTIVE" selected>Ativo</option>
+          <option value="MAINTENANCE">Manutenção</option>
+          <option value="INACTIVE">Inativo</option>
+        </select>
+        <div></div>
+        <button type="submit" class="col-span-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 hover:scale-105 text-white rounded-xl shadow-lg text-sm font-bold transition">
+          + Adicionar Veículo
+        </button>
+      </form>
+      <div id="loadingVehiclesIndicator" class="hidden flex justify-center mb-3">
+        <div class="w-10 h-10 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Matrícula</th>
+              <th class="p-3 font-bold">Marca</th>
+              <th class="p-3 font-bold">Modelo</th>
+              <th class="p-3 font-bold">Ano</th>
+              <th class="p-3 font-bold">Cap. Pass.</th>
+              <th class="p-3 font-bold">Cap. Malas</th>
+              <th class="p-3 font-bold">Status</th>
+              <th class="p-3 font-bold">Criado Em</th>
+              <th class="p-3 font-bold">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="vehiclesTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <div id="noVehiclesMessage" class="hidden text-center text-gray-400 py-6">Nenhum veículo encontrado.</div>
+    </section>
+  </main>
+<script>
+const VEHICLES_API_BASE = "/admin/vehicles";
+const vehicleToken = localStorage.getItem('access_token');
+
+// Mensagem informativa/erro
+function showVehicleMsg(msg, type = "info") {
+  const el = document.getElementById("adminVehicleMessage");
+  el.textContent = msg;
+  el.classList.remove("hidden", "text-red-700", "border-red-200", "bg-red-50");
+  if(type === "error") {
+    el.classList.add("text-red-700", "border-red-200", "bg-red-50");
+  } else {
+    el.classList.remove("text-red-700", "border-red-200", "bg-red-50");
+  }
+  setTimeout(() => el.classList.add("hidden"), 4000);
+}
+// Spinner
+function showVehicleLoading(on) {
+  document.getElementById("loadingVehiclesIndicator").classList.toggle("hidden", !on);
+}
+
+// GET lista
+function refreshVehiclesTable() {
+  showVehicleLoading(true);
+  fetch(VEHICLES_API_BASE, {
+    method: "GET",
+    headers: { Authorization: "Bearer " + vehicleToken }
+  }).then(r => r.json().then(j => ({status: r.status, body: j})))
+    .then(({status, body}) => {
+      showVehicleLoading(false);
+      if (status !== 200) throw new Error(body.error || "Erro ao carregar");
+      const tbody = document.getElementById("vehiclesTableBody");
+      tbody.innerHTML = "";
+      (body || []).forEach(vehicle => {
+        tbody.appendChild(vehicleRow(vehicle));
+      });
+      document.getElementById("noVehiclesMessage").classList.toggle("hidden", (body||[]).length > 0);
+    })
+    .catch(e => {
+      showVehicleLoading(false);
+      showVehicleMsg(e.message, "error");
+      document.getElementById("noVehiclesMessage").classList.remove("hidden");
+    });
+}
+// HTML de linha/tabela
+function vehicleRow(vehicle) {
+  const tr = document.createElement("tr");
+  let options = [
+    {value: "ACTIVE", label: "Ativo"},
+    {value: "MAINTENANCE", label: "Manutenção"},
+    {value: "INACTIVE", label: "Inativo"},
+  ].map(opt => `<option value="${opt.value}" ${opt.value === vehicle.status ? "selected" : ""}>${opt.label}</option>`).join('');
+  tr.innerHTML = `
+    <td class="p-2">${vehicle.id}</td>
+    <td class="p-2">${vehicle.license_plate || ""}</td>
+    <td class="p-2">${vehicle.make || ""}</td>
+    <td class="p-2">${vehicle.model || ""}</td>
+    <td class="p-2">${vehicle.year || ""}</td>
+    <td class="p-2">${vehicle.capacity_passengers || ""}</td>
+    <td class="p-2">${vehicle.capacity_bags || ""}</td>
+    <td class="p-2">
+      <select class="vehicleStatusDropdown px-2 py-1 bg-white border border-gray-200 rounded text-xs" data-id="${vehicle.id}">
+        ${options}
+      </select>
+    </td>
+    <td class="p-2">${vehicle.created_at ? new Date(vehicle.created_at).toLocaleString("pt-PT") : ""}</td>
+    <td class="p-2 flex gap-2">
+      <button class="deleteVehicleBtn px-3 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 text-xs font-bold border border-red-200" data-id="${vehicle.id}">
+        Remover
+      </button>
+    </td>
+  `;
+  return tr;
+}
+
+// ADD Vehicle
+document.getElementById("addVehicleForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const form = e.target;
+  const data = {
+    license_plate: form.license_plate.value.trim(),
+    make: form.make.value.trim(),
+    model: form.model.value.trim(),
+    year: form.year.value ? +form.year.value : null,
+    capacity_passengers: form.capacity_passengers.value ? +form.capacity_passengers.value : null,
+    capacity_bags: form.capacity_bags.value ? +form.capacity_bags.value : null,
+    status: form.status.value,
+  };
+  showVehicleLoading(true);
+  fetch(VEHICLES_API_BASE, {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + vehicleToken,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  })
+    .then(r => r.json().then(j => ({status:r.status, body: j})))
+    .then(({status, body}) => {
+      showVehicleLoading(false);
+      if(status !== 201) throw new Error(body.error || "Erro ao adicionar veículo");
+      showVehicleMsg("Veículo adicionado com sucesso.");
+      form.reset();
+      refreshVehiclesTable();
+    })
+    .catch(e => {
+      showVehicleLoading(false);
+      showVehicleMsg(e.message, "error");
+    });
+});
+
+// REFRESH Btn
+document.getElementById("refreshVehiclesBtn").addEventListener("click", refreshVehiclesTable);
+
+// Remover veículo & status update delegação:
+document.getElementById("vehiclesTableBody").addEventListener("click", function(e){
+  // Apagar
+  if (e.target.classList.contains("deleteVehicleBtn")) {
+    const id = e.target.dataset.id;
+    if (!confirm(`Remover veículo ID ${id}?`)) return;
+    showVehicleLoading(true);
+    fetch(`${VEHICLES_API_BASE}/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer " + vehicleToken }
+    })
+      .then(r => {
+        showVehicleLoading(false);
+        if(r.status === 204){
+          showVehicleMsg("Veículo removido.");
+          refreshVehiclesTable();
+        }
+        else return r.json().then(b => { throw new Error(b.error || "Erro ao remover veículo") });
+      })
+      .catch(e => {
+        showVehicleLoading(false);
+        showVehicleMsg(e.message, "error");
+      });
+  }
+});
+
+// PATCH status
+document.getElementById("vehiclesTableBody").addEventListener("change", function(e){
+  if (e.target.classList.contains("vehicleStatusDropdown")) {
+    const id = e.target.dataset.id;
+    const status = e.target.value;
+    showVehicleLoading(true);
+    fetch(`${VEHICLES_API_BASE}/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": "Bearer " + vehicleToken,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({status})
+    }).then(r => r.json().then(b => ({status:r.status, body:b})))
+      .then(({status, body}) => {
+        showVehicleLoading(false);
+        if (status !== 200) throw new Error(body.error || "Erro ao atualizar status");
+        showVehicleMsg("Estado atualizado.");
+        refreshVehiclesTable();
+      })
+      .catch(e => {
+        showVehicleLoading(false);
+        showVehicleMsg(e.message, "error");
+        setTimeout(refreshVehiclesTable, 1000);
+      });
+  }
+});
+
+// Inicializa
+window.addEventListener("DOMContentLoaded", refreshVehiclesTable);
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Metas dos Vouchers dos Parceiros</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <header class="bg-white shadow-sm py-3 px-8 flex justify-between items-center">
+    <button onclick="window.history.back()"
+      class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 shadow transition">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Voltar ao Painel
+    </button>
+    <h1 class="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+      <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="8" width="18" height="8" rx="4"></rect>
+      </svg>
+      Metas dos Vouchers dos Parceiros
+    </h1>
+    <div></div>
+  </header>
+  <main class="flex-1 w-full max-w mx-auto px-4 py-10">
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+          <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4"></rect></svg>
+          Metas dos Vouchers dos Parceiros
+        </h1>
+        <button id="refreshPartnerVouchersBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Atualizar Lista
+        </button>
+      </div>
+      <div id="adminPartnerVoucherMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <div id="loadingPartnerVouchersIndicator" class="hidden flex justify-center mb-3">
+        <div class="w-10 h-10 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Código</th>
+              <th class="p-3 font-bold">Parceiro</th>
+              <th class="p-3 font-bold">Descrição</th>
+              <th class="p-3 font-bold">Tipo</th>
+              <th class="p-3 font-bold">Valor</th>
+              <th class="p-3 font-bold">Usos</th>
+              <th class="p-3 font-bold">Meta</th>
+              <th class="p-3 font-bold">Status</th>
+              <th class="p-3 font-bold">Criado Em</th>
+            </tr>
+          </thead>
+          <tbody id="partnerVouchersTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <div id="noPartnerVouchersMessage" class="hidden text-center text-gray-400 py-6">Nenhum voucher de parceiro encontrado.</div>
+    </section>
+  </main>
+
+<script>
+  // Adapte isto ao teu caso. Pode ser apenas uma string: const API_BASE_URL = '';
+  const API_BASE_URL = '';
+
+  const partnerVouchersTableBody = document.getElementById('partnerVouchersTableBody');
+  const adminPartnerVoucherMessage = document.getElementById('adminPartnerVoucherMessage');
+  const loadingPartnerVouchersIndicator = document.getElementById('loadingPartnerVouchersIndicator');
+  const noPartnerVouchersMessage = document.getElementById('noPartnerVouchersMessage');
+  const refreshPartnerVouchersBtn = document.getElementById('refreshPartnerVouchersBtn');
+
+  function formatCurrency(val) {
+    if (typeof val !== 'number') val = Number(val);
+    return val.toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+  function formatDateTime(dt) {
+    if (!dt) return '';
+    // Espera formato ISO
+    const d = new Date(dt);
+    return d.toLocaleDateString('pt-PT') + ' ' + d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'});
+  }
+  function showAdminMessage(dom, msg, type="info") {
+    dom.textContent = msg;
+    dom.classList.remove("hidden");
+    dom.classList.remove("border-red-300", "bg-red-50", "text-red-900");
+    if(type === 'error') {
+      dom.classList.add("border-red-300", "bg-red-50", "text-red-900");
+    }
+    setTimeout(() => dom.classList.add("hidden"), 3500);
+  }
+
+  async function fetchAndDisplayPartnerVouchers() {
+    loadingPartnerVouchersIndicator.style.display = 'flex';
+    partnerVouchersTableBody.innerHTML = '';
+    noPartnerVouchersMessage.style.display = 'none';
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/vouchers/with_user`);
+      if (!response.ok) throw new Error(`Erro ${response.status}`);
+      const vouchers = await response.json();
+      if (vouchers.length === 0) {
+        noPartnerVouchersMessage.style.display = 'block';
+      } else {
+        vouchers.forEach(voucher => {
+          const row = partnerVouchersTableBody.insertRow();
+          row.insertCell().textContent = voucher.id;
+          row.insertCell().textContent = voucher.code;
+          row.insertCell().textContent = voucher.user && voucher.user.name ? voucher.user.name : '(Sem nome)';
+          row.insertCell().textContent = voucher.description || '-';
+          row.insertCell().textContent = voucher.discount_type === 'PERCENTAGE' ? '%' : 'Fixo';
+          row.insertCell().textContent =
+            voucher.discount_type === 'PERCENTAGE'
+              ? `${voucher.discount_value}%`
+              : `${formatCurrency(voucher.discount_value)} €`;
+          row.insertCell().textContent =
+            `${voucher.current_uses}/${voucher.max_uses === 0 ? '∞' : voucher.max_uses}`;
+          // Coluna Meta
+          row.insertCell().textContent = voucher.max_uses === 0 ? '-' : voucher.max_uses;
+          // Coluna Status
+          let metaStatus = '';
+          if (voucher.max_uses === 0) {
+            metaStatus = 'Sem Limite';
+          } else if (voucher.current_uses >= voucher.max_uses) {
+            metaStatus = 'Meta concluída';
+          } else {
+            metaStatus = 'Meta por concluir';
+          }
+          const statusCell = row.insertCell();
+          statusCell.innerHTML =
+            `<span class="${metaStatus === 'Meta concluída' ? 'text-green-600 font-semibold' : 'text-yellow-600 font-semibold'}">${metaStatus}</span>`;
+          row.insertCell().textContent = formatDateTime(voucher.created_at);
+        });
+      }
+    } catch (error) {
+      showAdminMessage(adminPartnerVoucherMessage, `Erro obter vouchers parceiros: ${error.message}`, 'error');
+      noPartnerVouchersMessage.style.display = 'block';
+    } finally {
+      loadingPartnerVouchersIndicator.style.display = 'none';
+    }
+  }
+
+  refreshPartnerVouchersBtn.addEventListener('click', fetchAndDisplayPartnerVouchers);
+  // Carregar no arranque
+  fetchAndDisplayPartnerVouchers();
+</script>
+</body>
+</html>

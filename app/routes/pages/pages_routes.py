@@ -64,17 +64,6 @@ def painel_client():
     return jsonify({"error": "Acesso negado."}), 403
 
 
-@pages_blueprint.route("/dashboard/admin")
-@jwt_required()
-def painel_admin():
-    """
-    Painel apenas para admin.
-    """
-    role = get_role()
-    if role == "admin":
-        return render_template("admin.html")
-    return jsonify({"error": "Acesso negado."}), 403
-
 @pages_blueprint.route("/dashboard/partner")
 @jwt_required()
 def painel_partner():
@@ -86,6 +75,103 @@ def painel_partner():
         return render_template("partner.html")
     return jsonify({"error": "Acesso negado."}), 403
 
+
 @pages_blueprint.route("/register", methods=["GET"])
 def pagina_register():
     return render_template("register.html")
+
+
+@pages_blueprint.route("/dashboard/admin")
+@jwt_required()
+def painel_admin():
+    """
+    Painel apenas para admin.
+    """
+    role = get_role()
+    if role == "admin":
+        return render_template("admin/main.html")
+    return jsonify({"error": "Acesso negado."}), 403
+
+
+@pages_blueprint.route("/dashboard/admin/bookings")
+@jwt_required()
+def admin_bookings():
+    """
+    Painel apenas para admin.
+    """
+    role = get_role()
+    if role == "admin":
+        return render_template("admin/bookings.html")
+    return jsonify({"error": "Acesso negado."}), 403
+
+
+@pages_blueprint.route("/dashboard/admin/drivers")
+@jwt_required()
+def admin_drivers():
+    """
+    Painel apenas para admin.
+    """
+    role = get_role()
+    if role == "admin":
+        return render_template("admin/drivers.html")
+    return jsonify({"error": "Acesso negado."}), 403
+
+
+@pages_blueprint.route("/dashboard/admin/vehicles")
+@jwt_required()
+def admin_vehicles():
+    """
+    Painel apenas para admin.
+    """
+    role = get_role()
+    if role == "admin":
+        return render_template("admin/vehicles.html")
+    return jsonify({"error": "Acesso negado."}), 403
+
+
+@pages_blueprint.route("/dashboard/admin/tariffs")
+@jwt_required()
+def admin_tariffs():
+    """
+    Painel apenas para admin.
+    """
+    role = get_role()
+    if role == "admin":
+        return render_template("admin/tariffs.html")
+    return jsonify({"error": "Acesso negado."}), 403
+
+
+@pages_blueprint.route("/dashboard/admin/vouchers")
+@jwt_required()
+def admin_vouchers():
+    """
+    Painel apenas para admin.
+    """
+    role = get_role()
+    if role == "admin":
+        return render_template("admin/vouchers.html")
+    return jsonify({"error": "Acesso negado."}), 403
+
+
+@pages_blueprint.route("/dashboard/admin/users")
+@jwt_required()
+def admin_users():
+    """
+    Painel apenas para admin.
+    """
+    role = get_role()
+    if role == "admin":
+        return render_template("admin/users.html")
+    return jsonify({"error": "Acesso negado."}), 403
+
+
+@pages_blueprint.route("/dashboard/admin/metas")
+@jwt_required()
+def admin_metas():
+    """
+    Painel apenas para admin.
+    """
+    role = get_role()
+    if role == "admin":
+        return render_template("admin/metas.html")
+    return jsonify({"error": "Acesso negado."}), 403

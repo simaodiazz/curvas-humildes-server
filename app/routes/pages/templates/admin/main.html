@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel de Administração</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800">
+
+  <!-- Header -->
+  <header class="bg-white shadow py-4 px-6 flex items-center justify-between">
+    <h1 class="text-xl font-bold text-gray-700">Painel de Administração</h1>
+    <button 
+      onclick="logout()" 
+      class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+    >
+      Sair
+    </button>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <h2 class="text-2xl font-semibold mb-10">Bem-vindo, Administrador</h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <a href="/dashboard/admin/bookings" class="group bg-white rounded-2xl border border-transparent hover:border-blue-500 shadow-sm hover:shadow-md p-6 transition-all flex flex-col gap-4">
+        <div class="w-14 h-14 rounded-full bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold">Gestão de Reservas</h3>
+          <p class="text-sm text-gray-500">Visualizar e gerir todas as reservas</p>
+        </div>
+      </a>
+
+      <a href="/dashboard/admin/drivers" class="group bg-white rounded-2xl border border-transparent hover:border-green-500 shadow-sm hover:shadow-md p-6 transition-all flex flex-col gap-4">
+        <div class="w-14 h-14 rounded-full bg-green-100 group-hover:bg-green-200 flex items-center justify-center">
+          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 14a4 4 0 018 0m-4 0v5a1 1 0 001 1h3a1 1 0 001-1v-5m-7-1a4 4 0 017.89-.55" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold">Gestão de Motoristas</h3>
+          <p class="text-sm text-gray-500">Adicionar, editar e remover motoristas</p>
+        </div>
+      </a>
+
+      <!-- Gestão de Frota -->
+      <a href="/dashboard/admin/vehicles" class="group bg-white rounded-2xl border border-transparent hover:border-yellow-500 shadow-sm hover:shadow-md p-6 transition-all flex flex-col gap-4">
+        <div class="w-14 h-14 rounded-full bg-yellow-100 group-hover:bg-yellow-200 flex items-center justify-center">
+          <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" stroke-width="2">
+            <rect x="3" y="11" width="18" height="6" rx="2"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 17v2a2 2 0 004 0v-2m6 2a2 2 0 004 0v-2" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold">Gestão de Frota</h3>
+          <p class="text-sm text-gray-500">Gerir veículos disponíveis</p>
+        </div>
+      </a>
+
+      <!-- Gestão de Tarifas -->
+      <a href="/dashboard/admin/tariffs" class="group bg-white rounded-2xl border border-transparent hover:border-purple-500 shadow-sm hover:shadow-md p-6 transition-all flex flex-col gap-4">
+        <div class="w-14 h-14 rounded-full bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center">
+          <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-4.418 0-8 1.79-8 4s3.582 4 8 4 8-1.79 8-4-3.582-4-8-4zm0 0V4m0 16v-4" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold">Gestão de Tarifas</h3>
+          <p class="text-sm text-gray-500">Editar e consultar tarifas</p>
+        </div>
+      </a>
+
+      <!-- Gestão de Vouchers -->
+      <a href="/dashboard/admin/vouchers" class="group bg-white rounded-2xl border border-transparent hover:border-pink-500 shadow-sm hover:shadow-md p-6 transition-all flex flex-col gap-4">
+        <div class="w-14 h-14 rounded-full bg-pink-100 group-hover:bg-pink-200 flex items-center justify-center">
+          <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" stroke-width="2">
+            <rect x="3" y="7" width="18" height="10" rx="2"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold">Gestão de Vouchers</h3>
+          <p class="text-sm text-gray-500">Criar e gerir códigos promocionais</p>
+        </div>
+      </a>
+
+      <!-- Gestão de Utilizadores -->
+      <a href="/dashboard/admin/users" class="group bg-white rounded-2xl border border-transparent hover:border-teal-500 shadow-sm hover:shadow-md p-6 transition-all flex flex-col gap-4">
+        <div class="w-14 h-14 rounded-full bg-teal-100 group-hover:bg-teal-200 flex items-center justify-center">
+          <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" stroke-width="2">
+            <circle cx="9" cy="7" r="4" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 11a4 4 0 01-8 0"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19a4 4 0 01-8 0"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold">Gestão de Utilizadores</h3>
+          <p class="text-sm text-gray-500">Listar, editar e remover utilizadores</p>
+        </div>
+      </a>
+
+      <!-- Gestão de Parceiros -->
+      <a href="/dashboard/admin/metas" class="group bg-white rounded-2xl border border-transparent hover:border-indigo-500 shadow-sm hover:shadow-md p-6 transition-all flex flex-col gap-4">
+        <div class="w-14 h-14 rounded-full bg-indigo-100 group-hover:bg-indigo-200 flex items-center justify-center">
+          <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12l-2 2a2 2 0 002 2h3.17a2 2 0 001.414-.586l4.829-4.828a2 2 0 10-2.828-2.829l-1.586 1.585"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold">Gestão de Metas</h3>
+          <p class="text-sm text-gray-500">Gerir metas de parceiros</p>
+        </div>
+      </a>
+
+    </div>
+  </main>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('access_token');
+      window.location.href = "/login";
+    }
+  </script>
+</body>
+</html>

@@ -7,7 +7,7 @@ from app.routes.main_routes import logger
 from ..authentication_routes import get_role
 from flask_jwt_extended import jwt_required
 
-from ...services import bookings_service, budget_service, vouchers_service
+from ...services import bookings_service, budget_service, vouchers_service, emails_service
 
 handlers_blueprint = Blueprint(
     name="handlers",
@@ -145,7 +145,7 @@ def handle_submit_booking():
         mail_instance = current_app.extensions.get("mail")
         if mail_instance:
             try:
-                bookings_service.send_new_booking_notification_email(
+                emails_service.send_new_booking_notification_email(
                     mail_instance, new_booking
                 )
             except Exception as email_error:
@@ -183,7 +183,7 @@ def handle_validate_voucher():
 
     if not voucher_code or original_budget_pre_vat_str is None:
         return jsonify({"error": "Campos 'voucher_code' e 'original_budget_pre_vat' são obrigatórios."}), 400
-    
+
     try:
         original_budget_pre_vat = float(original_budget_pre_vat_str)
         if original_budget_pre_vat < 0:
@@ -194,7 +194,7 @@ def handle_validate_voucher():
     try:
         valid_voucher = vouchers_service.validate_voucher_for_use(voucher_code, original_budget_pre_vat)
         final_budget_pre_vat, discount_amount = vouchers_service.apply_voucher_to_budget(original_budget_pre_vat, valid_voucher)
-        
+      
         vat_percentage = current_app.config.get('VAT_RATE', 23.0)
         vat_amount_final = round(final_budget_pre_vat * (vat_percentage / 100.0), 2)
         total_with_vat_final = round(final_budget_pre_vat + vat_amount_final, 2)

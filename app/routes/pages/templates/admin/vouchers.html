@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestão de Vouchers</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+<header class="bg-white shadow-sm py-3 px-8 flex justify-between items-center">
+<button onclick="history.back()"
+class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 shadow transition">
+<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+    Voltar ao Painel
+</button>
+<h1 class="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+<svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M12 12c2.25 0 4.09-1.84 4.09-4.09 0-2.24-1.84-4.08-4.09-4.08s-4.08 1.84-4.08 4.08c0 2.25 1.83 4.09 4.08 4.09zm0 2.54c-2.67 0-8 1.34-8 4.01V22h16v-3.45c0-2.67-5.33-4.01-8-4.01z"/>
+</svg>
+    Gestão de vouchers
+</h1>
+<div></div>
+</header>
+
+<section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8 max-w-7xl mx-auto mt-12">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+    <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+      <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8 12h8" /></svg>
+      Gestão de Vouchers
+    </h1>
+    <button id="refreshVouchersBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+      <svg class="w-4 h-4" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+      Atualizar Lista
+    </button>
+  </div>
+  <div id="adminVoucherMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+  <form id="addVoucherForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white bg-opacity-80 p-4 rounded-xl shadow mb-6">
+    <input type="text" id="newVoucherCode" name="code" placeholder="Código" required class="px-4 py-2 border-2 border-gray-200 rounded-xl uppercase focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+    <input type="text" id="newVoucherDescription" name="description" placeholder="Descrição" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+    <select id="newVoucherDiscountType" name="discount_type" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+      <option value="PERCENTAGE" selected>Percentagem (%)</option>
+      <option value="FIXED_AMOUNT">Valor Fixo (€)</option>
+    </select>
+    <input type="number" id="newVoucherDiscountValue" name="discount_value" placeholder="Valor Desconto" step="0.01" min="0.01" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+    <input type="date" id="newVoucherExpirationDate" name="expiration_date" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+    <input type="number" id="newVoucherMaxUses" name="max_uses" placeholder="Máximo de Usos" min="0" value="1" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+    <input type="number" id="newVoucherMinBookingValue" name="min_booking_value" placeholder="Valor Mín Reserva (€)" step="0.01" min="0" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+    <select id="newVoucherUserId" name="user_id" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+      <option value="">Não associar a utilizador</option>
+    </select>
+    <div class="col-span-full flex items-center gap-2 ml-1">
+      <input id="newVoucherIsActive" name="is_active" type="checkbox" checked class="accent-indigo-600 w-5 h-5">
+      <label for="newVoucherIsActive" class="text-sm text-gray-700">Ativo</label>
+    </div>
+    <button type="submit" class="col-span-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 hover:scale-105 text-white rounded-xl shadow-lg text-sm font-bold transition">
+      + Adicionar Voucher
+    </button>
+  </form>
+  <div id="loadingVouchersIndicator" class="hidden flex justify-center mb-3">
+    <div class="w-10 h-10 border-4 border-green-200 border-t-green-500 rounded-full animate-spin"></div>
+  </div>
+  <div class="overflow-x-auto rounded-xl border border-gray-100">
+    <table class="min-w-full text-sm shadow-none">
+      <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+        <tr>
+          <th class="p-3 font-bold">ID</th>
+          <th class="p-3 font-bold">Código</th>
+          <th class="p-3 font-bold">Descrição</th>
+          <th class="p-3 font-bold">Tipo</th>
+          <th class="p-3 font-bold">Valor</th>
+          <th class="p-3 font-bold">Mín. Reserva</th>
+          <th class="p-3 font-bold">Parceiro</th>
+          <th class="p-3 font-bold">Validade</th>
+          <th class="p-3 font-bold">Usos</th>
+          <th class="p-3 font-bold">Status</th>
+          <th class="p-3 font-bold">Criado Em</th>
+          <th class="p-3 font-bold">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="vouchersTableBody" class="divide-y divide-gray-100"></tbody>
+    </table>
+  </div>
+  <div id="noVouchersMessage" class="hidden text-center text-gray-400 py-6">Nenhum voucher encontrado.</div>
+</section>
+<script>
+const API_BASE = ""; // Se API não é raiz, ajuste tipo "/api"
+const JWT_KEY = "admin_jwt_token";
+
+// Helpers
+function showMsg(msg, type = "info", time = 3500) {
+  const box = document.getElementById("adminVoucherMessage");
+  box.classList.remove("hidden");
+  box.className = "text-center mb-3 px-4 py-2 rounded shadow text-sm ";
+  if(type==="error") box.classList.add("bg-red-100","text-red-800","border","border-red-200");
+  else if(type==="success") box.classList.add("bg-green-100","text-green-900","border","border-green-200");
+  else box.classList.add("bg-indigo-50","text-indigo-900","border","border-indigo-100");
+  box.textContent = msg;
+  if(time) setTimeout(()=>box.classList.add("hidden"), time);
+}
+
+function showLoading(show = true) {
+  document.getElementById("loadingVouchersIndicator").classList.toggle("hidden", !show);
+}
+
+function getJWT() {
+  return localStorage.getItem(JWT_KEY) || "";
+}
+
+function withAuth(headers={}) { 
+  const token = getJWT();
+  if(token) headers['Authorization'] = "Bearer " + token;
+  return headers;
+}
+
+// ========== USER SELECT =============
+// Você deve ter um endpoint para isso. Se não, apague esta função e o <select>
+async function fillUserSelect() {
+  const sel = document.getElementById('newVoucherUserId');
+  if (!sel) return;
+  // Limpa opções, mantém só a primeira
+  sel.options.length = 1;
+  try {
+    const res = await fetch(API_BASE+"/admin/users", {headers: withAuth()}); // Adapte se necessário
+    if(res.ok) {
+      const users = await res.json();
+      users.forEach(u=>{
+        const o = document.createElement("option");
+        o.value = u.id;
+        o.textContent = `[${u.id}] ${u.name || u.email || 'user'}`;
+        sel.appendChild(o);
+      });
+    }
+  } catch (e) {}
+}
+
+// ========== FETCH & RENDER =============
+async function fetchVouchers() {
+  showLoading(true);
+  hideNoVouchers();
+  try {
+    const res = await fetch(API_BASE+"/admin/vouchers", {headers: withAuth()});
+    if(res.status===401 || res.status===403) {
+      showMsg("Acesso não autorizado. Faça login com permissões de admin.", "error", 9000);
+      renderVouchers([]);
+      return;
+    }
+    if(!res.ok) throw new Error("Não foi possível obter vouchers");
+    const vouchers = await res.json();
+    renderVouchers(Array.isArray(vouchers) ? vouchers : []);
+  } catch (err) {
+    showMsg("Erro ao obter vouchers: "+err.message, "error", 6000);
+    renderVouchers([]);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Renderização da tabela
+function renderVouchers(list) {
+  const tbody = document.getElementById("vouchersTableBody");
+  tbody.innerHTML = "";
+  if (!list.length) {
+    showNoVouchers();
+    return;
+  }
+  for (const v of list) {
+    const tr = document.createElement("tr");
+    function td(...classes) { 
+      const x = document.createElement("td"); 
+      if(classes.length) x.className = classes.join(" ");
+      return x;
+    }
+    tr.append(
+      td("p-2 text-center font-mono text-xs").appendChild(document.createTextNode(v.id)), // id
+      td("p-2 font-mono uppercase text-xs font-bold text-indigo-800").appendChild(document.createTextNode(v.code)),
+      td("p-2").appendChild(document.createTextNode(v.description || "")),
+      td("p-2").appendChild(document.createTextNode(
+        v.discount_type==="FIXED_AMOUNT" ? "Valor (€)" : "Percentagem (%)"
+      )),
+      td("p-2 text-center font-mono").appendChild(document.createTextNode(v.discount_value)),
+      td("p-2 text-center font-mono text-xs").appendChild(document.createTextNode(v.min_booking_value ?? "")),
+      td("p-2").appendChild(document.createTextNode(
+        v.user?.name ? `${v.user.name} (${v.user.email})` : (v.user_id ? `ID:${v.user_id}` : "")
+      )),
+      td("p-2 font-mono text-xs").appendChild(document.createTextNode(v.expiration_date ? v.expiration_date.slice(0,10) : "")),
+      td("p-2 text-center font-mono").appendChild(document.createTextNode(
+        (v.current_uses||0) + " / " + (v.max_uses || "∞")
+      )),
+      td("p-2 text-center ").appendChild(
+        createStatusPill(v)
+      ),
+      td("p-2 font-mono text-xs").appendChild(document.createTextNode(
+        v.created_at ? v.created_at.slice(0,10) : ""
+      )),
+      td("p-1 space-x-1 flex flex-col md:flex-row") // Empty, will fill next
+    );
+    // "tr.append" arguments were DOM nodes, not <td> -- corrected:
+    // We rather create all <td>s, then use tr.append(...cells).
+    // Let's do that:
+    let cells = [];
+    // ID
+    cells.push(Object.assign(td("p-2 text-center font-mono text-xs"), {textContent: v.id}));
+    // Código
+    cells.push(Object.assign(td("p-2 font-mono uppercase text-xs font-bold text-indigo-800"), {textContent: v.code}));
+    // Descrição
+    cells.push(Object.assign(td("p-2"), {textContent: v.description || ""}));
+    // Tipo
+    cells.push(Object.assign(td("p-2"), {textContent:
+      v.discount_type==="FIXED_AMOUNT" ? "Valor (€)" : "Percentagem (%)"
+    }));
+    // Valor
+    cells.push(Object.assign(td("p-2 text-center font-mono"), {textContent: v.discount_value}));
+    // Mín. Reserva
+    cells.push(Object.assign(td("p-2 text-center font-mono text-xs"), {textContent: v.min_booking_value ?? ""}));
+    // Parceiro/Utilizador
+    cells.push(Object.assign(td("p-2"), {textContent:
+      v.user?.name ? `${v.user.name} (${v.user.email})` : (v.user_id ? `ID:${v.user_id}` : "")
+    }));
+    // Validade
+    cells.push(Object.assign(td("p-2 font-mono text-xs"), {textContent: v.expiration_date ? v.expiration_date.slice(0,10) : ""}));
+    // Usos
+    cells.push(Object.assign(td("p-2 text-center font-mono"), {textContent:
+      (v.current_uses||0) + " / " + (v.max_uses || "∞")
+    }));
+    // Status
+    const statusCell = td("p-2 text-center ");
+    statusCell.appendChild(createStatusPill(v));
+    cells.push(statusCell);
+    // Criado Em
+    cells.push(Object.assign(td("p-2 font-mono text-xs"), {textContent: v.created_at ? v.created_at.slice(0,10) : ""}));
+    // Ações
+    const actionsCell = td("p-1 space-x-1 flex flex-col md:flex-row");
+    // "EDIT" botão: abre modal/bootstrap, mas aqui: inline edita o status e valor.
+    const statusBtn = document.createElement("button");
+    statusBtn.className = "text-xs px-2 py-1 font-semibold rounded bg-indigo-100 text-indigo-900 hover:bg-indigo-200 mr-1 mb-1";
+    statusBtn.innerText = v.is_active ? "Desativar" : "Ativar";
+    statusBtn.onclick = (e)=>{
+      e.preventDefault();
+      updateVoucher(v.id, {is_active: !v.is_active}); // PATCH
+    };
+    actionsCell.appendChild(statusBtn);
+    // "EDITAR" botão (valor/desc...)
+    const editBtn = document.createElement("button");
+    editBtn.className = "text-xs px-2 py-1 font-semibold rounded bg-yellow-100 text-yellow-900 hover:bg-yellow-200 mr-1 mb-1";
+    editBtn.innerText = "Editar";
+    editBtn.onclick = (e)=>{
+      e.preventDefault();
+      editVoucherFormInline(tr, v);
+    };
+    actionsCell.appendChild(editBtn);
+    // "REMOVER" botão
+    const delBtn = document.createElement("button");
+    delBtn.className = "text-xs px-2 py-1 font-semibold rounded bg-red-100 text-red-900 hover:bg-red-200";
+    delBtn.innerText = "Apagar";
+    delBtn.onclick = (e)=>{
+      e.preventDefault();
+      if(confirm("Deseja apagar este voucher?")) deleteVoucher(v.id);
+    };
+    actionsCell.appendChild(delBtn);
+    cells.push(actionsCell);
+    tr.append(...cells);
+    tbody.appendChild(tr);
+  }
+  hideNoVouchers();
+}
+
+function createStatusPill(v) {
+  const pill = document.createElement("span");
+  pill.className = "rounded-full px-2 py-0.5 text-xs font-semibold inline-block " +
+      (v.is_active ? "bg-green-100 text-green-900" : "bg-gray-200 text-gray-800")
+  ;
+  pill.textContent = v.is_active ? "Ativo" : "Inativo";
+  return pill;
+}
+
+function showNoVouchers() {
+  document.getElementById("noVouchersMessage").classList.remove("hidden");
+}
+function hideNoVouchers() {
+  document.getElementById("noVouchersMessage").classList.add("hidden");
+}
+
+// ========== CREATE ============
+document.getElementById("addVoucherForm").onsubmit = async function(e) {
+  e.preventDefault();
+  const fd = new FormData(this);
+  const data = {};
+  for(const [k,v] of fd) {
+    if(k==="is_active") data[k] = true;
+    else if(k==="discount_type") data[k] = v;
+    else if(["discount_value","min_booking_value","max_uses"].includes(k)) data[k] = v ? parseFloat(v):null;
+    else if(k==="user_id") data[k] = v||null;
+    else data[k] = v;
+  }
+  data.is_active = !!document.getElementById("newVoucherIsActive").checked;
+  if (data.expiration_date === "") delete data.expiration_date;
+  if (!data.user_id) delete data.user_id;
+  try {
+    const res = await fetch(API_BASE+"/admin/vouchers", {
+      method: "POST",
+      headers: {...withAuth({"Content-Type":"application/json"})},
+      body: JSON.stringify(data)
+    });
+    if(res.status===201) {
+      this.reset(); // Clean form!
+      showMsg("Voucher criado com sucesso!", "success");
+      fetchVouchers();
+    } else {
+      const txt = await res.text();
+      let errMsg = "";
+      try { errMsg = JSON.parse(txt).error; } catch { errMsg=txt; }
+      throw new Error(errMsg);
+    }
+  }
+  catch (err) {
+    showMsg("Não criado: "+err.message, "error", 8000);
+  }
+};
+
+// ========== UPDATE ============
+async function updateVoucher(id, updateFields) {
+  showLoading(true);
+  try {
+    const res = await fetch(API_BASE+`/admin/vouchers/${id}`, {
+      method: "PATCH",
+      headers: {...withAuth({"Content-Type":"application/json"})},
+      body: JSON.stringify(updateFields)
+    });
+    if(res.ok) {
+      showMsg("Atualizado!", "success");
+      fetchVouchers(); // reload table
+    } else {
+      let t = await res.text(), err="";
+      try{err=JSON.parse(t).error}catch{err=t;}
+      throw new Error(err);
+    }
+  } catch(e) {
+    showMsg("Erro ao atualizar: "+e.message, "error");
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ========== DELETE ============
+async function deleteVoucher(id) {
+  showLoading(true);
+  try {
+    const res = await fetch(API_BASE+`/admin/vouchers/${id}`, {
+      method: "DELETE",
+      headers: withAuth(),
+    });
+    if(res.status===204) {
+      showMsg("Voucher removido!", "success");
+      fetchVouchers();
+    } else {
+      let t = await res.text(), err="";
+      try{err=JSON.parse(t).error}catch{err=t;}
+      throw new Error(err);
+    }
+  } catch(e) {
+    showMsg("Erro ao remover: "+e.message, "error");
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ========== INLINE EDIT FORM ============
+function editVoucherFormInline(tr, voucher) {
+  // Remove old open inlines
+  for(let e of document.querySelectorAll(".edit-voucher-inline")) e.remove();
+  // Remove rendered row and replace by form
+  const td = document.createElement("td");
+  td.colSpan = 12;
+  td.className="edit-voucher-inline p-2 bg-yellow-50 border border-yellow-200 rounded";
+  td.innerHTML = `
+    <form id="editVoucherForm_${voucher.id}" class="flex flex-col md:flex-row gap-3 items-center text-xs">
+      <input type="text" name="description" class="rounded px-2 border border-gray-200" value="${voucher.description||''}" placeholder="Descrição">
+      <select name="discount_type" class="rounded px-2 border border-gray-200">
+        <option value="PERCENTAGE" ${voucher.discount_type=="PERCENTAGE"?"selected":""}>Percentagem (%)</option>
+        <option value="FIXED_AMOUNT" ${voucher.discount_type=="FIXED_AMOUNT"?"selected":""}>Valor Fixo (€)</option>
+      </select>
+      <input type="number" name="discount_value" step="0.01" min="0.01" required class="rounded px-2 border border-gray-200" value="${voucher.discount_value}">
+      <input type="date" name="expiration_date" class="rounded px-2 border border-gray-200" value="${voucher.expiration_date ? voucher.expiration_date.slice(0,10):''}">
+      <input type="number" name="max_uses" min="0" class="rounded px-2 border border-gray-200" value="${voucher.max_uses||1}">
+      <input type="number" name="min_booking_value" step="0.01" min="0" class="rounded px-2 border border-gray-200" value="${voucher.min_booking_value||''}" placeholder="Min reserva">
+      <label>
+        <input type="checkbox" name="is_active" class="mx-1 accent-indigo-600" ${voucher.is_active?"checked":""}> Ativo
+      </label>
+      <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded font-bold">Guardar</button>
+      <button type="button" class="px-3 py-1 bg-gray-200 rounded" id="cancelEditInlineBtn">Cancelar</button>
+    </form>
+  `;
+  // Remove row and add form row
+  const trParent = tr.parentNode;
+  const formTr = document.createElement("tr");
+  formTr.appendChild(td);
+  trParent.insertBefore(formTr, tr.nextSibling);
+
+  // Cancel closes edit form
+  td.querySelector("#cancelEditInlineBtn").onclick = ()=>formTr.remove();
+
+  // Save submits via PATCH
+  td.querySelector("form").onsubmit = async function(e) {
+    e.preventDefault();
+    const f = new FormData(this);
+    const upd = {};
+    for(const [k,v] of f) {
+      if(k==="is_active") upd[k] = true;
+      else if(["discount_value","min_booking_value","max_uses"].includes(k)) upd[k]=v ? parseFloat(v):null;
+      else upd[k]=v;
+    }
+    upd.is_active = !!this.is_active.checked;
+    if (upd.expiration_date === "") delete upd.expiration_date;
+    // PATCH
+    await updateVoucher(voucher.id, upd);
+    formTr.remove();
+  };
+}
+
+// ========== BOOTSTRAP ===========
+document.getElementById("refreshVouchersBtn").onclick = fetchVouchers;
+
+window.onload = () => {
+  fillUserSelect();
+  fetchVouchers();
+};
+</script>
+</body>
+</html>

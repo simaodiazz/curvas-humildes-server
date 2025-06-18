@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestão de Reservas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <header class="bg-white shadow-sm py-3 px-8 flex justify-between items-center">
+    <button onclick="goBack()"
+      class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 shadow transition">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Voltar ao Painel
+    </button>
+    <h1 class="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+      <svg class="h-7 w-7 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Gestão de Reservas
+    </h1>
+    <div></div>
+  </header>
+  <main class="flex-1 w-full max-w mx-auto px-2 py-10">
+    <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
+        <div></div>
+        <button id="refreshBookingsBtn"
+          class="px-5 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-700 hover:scale-105 hover:shadow-xl transition text-white rounded-lg shadow-lg text-sm font-bold flex items-center gap-2">
+          <svg class="w-4 h-4" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+            <path d="M4 4v6h6M20 20v-6h-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          </svg>
+          Atualizar Lista
+        </button>
+      </div>
+      <div id="adminBookingMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
+      <div id="loadingBookingsIndicator" class="hidden flex justify-center py-4">
+        <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-100">
+        <table class="min-w-full text-sm shadow-none">
+          <thead class="bg-indigo-50 text-indigo-900 text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 font-bold">ID</th>
+              <th class="p-3 font-bold">Passageiro</th>
+              <th class="p-3 font-bold">Telefone</th>
+              <th class="p-3 font-bold">Data</th>
+              <th class="p-3 font-bold">Hora</th>
+              <th class="p-3 font-bold">Duração</th>
+              <th class="p-3 font-bold">Partida</th>
+              <th class="p-3 font-bold">Destino</th>
+              <th class="p-3 font-bold">Pass.</th>
+              <th class="p-3 font-bold">Malas</th>
+              <th class="p-3 font-bold">Preço (€)</th>
+              <th class="p-3 font-bold">Voucher</th>
+              <th class="p-3 font-bold">Status</th>
+              <th class="p-3 font-bold">Motorista</th>
+              <th class="p-3 font-bold">Utilizador ID</th>
+              <th class="p-3 font-bold">Criado Em</th>
+              <th class="p-3 font-bold">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="bookingsTableBody" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+      <div id="noBookingsMessage" class="hidden text-center text-gray-400 py-6">Nenhuma reserva encontrada.</div>
+    </section>
+  </main>
+  <script>
+    const API_BASE_URL = "";
+
+    let ADMIN_JWT = localStorage.getItem("admin_jwt_token") || "";
+
+    let activeDriversList = [];
+    const ALLOWED_BOOKING_STATUSES = [
+      "created", "confirmed", "paid", "assigned", "concluded", "cancelled"
+    ];
+
+    const ALLOWED_EDIT_FIELDS = [
+      "passenger_name", "passenger_phone", "date", "time", "duration_minutes",
+      "pickup_location", "dropoff_location", "passengers", "bags", "instructions"
+    ];
+
+    const bookingsTableBody = document.getElementById('bookingsTableBody');
+    const refreshBookingsBtn = document.getElementById('refreshBookingsBtn');
+    const loadingBookingsIndicator = document.getElementById('loadingBookingsIndicator');
+    const noBookingsMessage = document.getElementById('noBookingsMessage');
+    const adminBookingMessage = document.getElementById('adminBookingMessage');
+
+    function goBack() {
+      window.location.href = "/dashboard/admin";
+    }
+
+    function formatCurrency(n) {
+      return n == null ? '-' : parseFloat(n).toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function formatDateTime(str) {
+      if (!str) return '-';
+      let d = new Date(str);
+      return d.toLocaleDateString("pt-PT") + " " + (d.toLocaleTimeString("pt-PT", {hour: '2-digit', minute: '2-digit'}));
+    }
+
+    function formatOnlyTime(str) {
+      if (!str) return '';
+      if (str.length === 5) return str; // "HH:MM"
+      let d = new Date(str);
+      return d.toLocaleTimeString("pt-PT", {hour: '2-digit', minute: '2-digit'});
+    }
+
+    function getAuthHeaders() {
+      const headers = {'Content-Type': 'application/json'};
+      if (ADMIN_JWT) headers['Authorization'] = 'Bearer ' + ADMIN_JWT;
+      return headers;
+    }
+
+    async function fetchActiveDrivers() {
+        try { const response = await fetch(`${API_BASE_URL}/admin/drivers?active=true`); if (!response.ok) throw new Error(`Erro ${response.status}`); activeDriversList = await response.json(); }
+        catch (error) { console.error('Erro obter motoristas ativos:', error); showAdminMessage(adminDriverMessage, `Erro obter lista motoristas: ${error.message}`, 'error'); activeDriversList = []; }
+    }
+
+    async function fetchBookings() {
+      let url = `${API_BASE_URL}/admin/bookings`;
+      let resp = await fetch(url, {headers: getAuthHeaders()});
+      if (!resp.ok) throw new Error("Erro ao buscar reservas: " + resp.statusText);
+      return await resp.json();
+    }
+
+    async function deleteBooking(id) {
+      let url = `${API_BASE_URL}/admin/bookings/${id}`;
+      let resp = await fetch(url, {
+        method: "DELETE", headers: getAuthHeaders()
+      });
+      if (!resp.ok) throw await resp.json();
+    }
+
+    async function patchBookingStatus(id, newStatus) {
+      let url = `${API_BASE_URL}/admin/bookings/${id}/status`;
+      let resp = await fetch(url, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({status: newStatus}),
+      });
+      let res = await resp.json();
+      if (!resp.ok) throw res;
+      return res;
+    }
+
+    async function patchBookingField(id, field, value) {
+      let url = `${API_BASE_URL}/admin/bookings/${id}/field`;
+      let resp = await fetch(url, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({field, value}),
+      });
+      let res = await resp.json();
+      if (!resp.ok) throw res;
+      return res;
+    }
+
+    async function patchAssignDriver(id, driverId) {
+      let url = `${API_BASE_URL}/admin/bookings/${id}/assign`;
+      let resp = await fetch(url, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({driver_id: driverId}),
+      });
+      let res = await resp.json();
+      if (!resp.ok) throw res;
+      return res;
+    }
+
+    async function renderBookingsTable() {
+      bookingsTableBody.innerHTML = '';
+      noBookingsMessage.style.display = "none";
+      loadingBookingsIndicator.style.display = "block";
+      try {
+        if (!activeDriversList.length)
+          await fetchActiveDrivers();
+        let bookings = await fetchBookings();
+        if (!bookings.length) {
+          noBookingsMessage.style.display = "block";
+          return;
+        }
+        bookings.forEach((booking) => {
+          const row = bookingsTableBody.insertRow();
+          row.insertCell().textContent = booking.id;
+          makeEditableCell(row, "passenger_name", booking.passenger_name, booking.id);
+          makeEditableCell(row, "passenger_phone", booking.passenger_phone, booking.id);
+          makeEditableCell(row, "date", booking.date && booking.date.slice(0,10), booking.id, "date");
+          makeEditableCell(row, "time", formatOnlyTime(booking.time), booking.id, "time");
+          makeEditableCell(row, "duration_minutes", booking.duration_minutes, booking.id, "number");
+          makeEditableCell(row, "pickup_location", booking.pickup_location, booking.id);
+          makeEditableCell(row, "dropoff_location", booking.dropoff_location, booking.id);
+          makeEditableCell(row, "passengers", booking.passengers, booking.id, "number");
+          makeEditableCell(row, "bags", booking.bags, booking.id, "number");
+          let priceCell = row.insertCell();
+          priceCell.innerHTML =
+            `<strong>${formatCurrency(booking.total_with_vat)}€</strong>
+             ${booking.discount_amount ? `<span class="text-xs text-gray-600 block">Desc: -${formatCurrency(booking.discount_amount)}</span>`: ""}
+             <span class="text-xs">IVA(${booking.vat_percentage}%): ${formatCurrency(booking.vat_amount)}</span>`;
+          row.insertCell().textContent = booking.applied_voucher_code || '-';
+          let statusCell = row.insertCell();
+          let statusSelect = document.createElement('select');
+          statusSelect.className = "status-select";
+          ALLOWED_BOOKING_STATUSES.forEach(st => {
+            let opt = document.createElement("option");
+            opt.value = st;
+            opt.textContent = st.replace(/_/g, " ");
+            if (st === booking.status) opt.selected = true;
+            statusSelect.appendChild(opt);
+          });
+          statusSelect.onchange = () => handleStatusChange(booking.id, statusSelect, booking.status);
+          statusCell.appendChild(statusSelect);
+          let driverCell = row.insertCell();
+          let driverSelect = document.createElement('select');
+          let driverOptNone = document.createElement("option");
+          driverOptNone.value = "";
+          driverOptNone.textContent = "-- Nenhum --";
+          driverSelect.appendChild(driverOptNone);
+          activeDriversList.forEach(driver => {
+            let opt = document.createElement("option");
+            opt.value = driver.id;
+            opt.textContent = driver.name || (driver.first_name + " " + driver.last_name);
+            if (booking.assigned_driver_id && Number(booking.assigned_driver_id) === Number(driver.id))
+              opt.selected = true;
+            driverSelect.appendChild(opt);
+          });
+          driverSelect.onchange = () => handleDriverAssign(booking.id, driverSelect, booking.assigned_driver_id);
+          driverCell.appendChild(driverSelect);
+          row.insertCell().textContent = booking.user_id || "-";
+          row.insertCell().textContent = formatDateTime(booking.created_at);
+          let actionsCell = row.insertCell();
+          let delBtn = document.createElement('button');
+          delBtn.textContent = "Excluir";
+          delBtn.className = "px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-semibold rounded";
+          delBtn.onclick = () => handleDeleteBooking(booking.id);
+          actionsCell.appendChild(delBtn);
+        });
+      } catch (e) {
+        console.error(e);
+        showAdminMessage(adminBookingMessage, typeof e === "object" && e.error ? e.error : String(e), "error");
+        noBookingsMessage.style.display = "block";
+      } finally {
+        loadingBookingsIndicator.style.display = "none";
+      }
+    }
+
+    refreshBookingsBtn.onclick = renderBookingsTable;
+
+    function makeEditableCell(row, field, value, bookingId, inputType = "text") {
+      const cell = row.insertCell();
+      cell.textContent = value ?? '';
+      if (!ALLOWED_EDIT_FIELDS.includes(field)) return;
+      cell.classList.add('editable-cell');
+      cell.title = "Duplo clique para editar";
+      cell.style.cursor = "pointer";
+
+      cell.ondblclick = () => {
+        const input = document.createElement('input');
+        input.type = inputType;
+        input.value = value ?? '';
+        input.className = 'bg-yellow-50 border rounded px-2 py-1 w-full';
+        cell.textContent = '';
+        cell.appendChild(input);
+        input.focus();
+        input.select();
+
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') trySaveEdit();
+          if (e.key === 'Escape') cell.textContent = value ?? '';
+        });
+        input.addEventListener('blur', trySaveEdit);
+
+        function trySaveEdit() {
+          let newValue;
+          if (inputType === "number") {
+            newValue = input.value === '' ? null : Number(input.value);
+            if (isNaN(newValue)) newValue = null;
+          } else if (inputType === "date") {
+            newValue = input.value;
+          } else if (inputType === "time") {
+            newValue = input.value;
+          } else {
+            newValue = input.value.trim();
+          }
+          if (newValue !== value) {
+            patchBookingField(bookingId, field, newValue)
+              .then(() => {
+                cell.textContent = newValue ?? '';
+                showAdminMessage(adminBookingMessage, "Campo atualizado!", "success");
+                renderBookingsTable();
+              })
+              .catch(res => {
+                showAdminMessage(adminBookingMessage, res.error || "Erro ao atualizar", "error");
+                cell.textContent = value ?? '';
+              });
+          } else {
+            cell.textContent = value ?? '';
+          }
+        }
+      }
+    }
+
+    // Status
+    function handleStatusChange(bookingId, select, previousStatus) {
+      if (!confirm("Alterar status para \""+select.value.replace(/_/g," ")+"\"?")) {
+        select.value = previousStatus;
+        return;
+      }
+      loadingBookingsIndicator.style.display = "block";
+      patchBookingStatus(bookingId, select.value)
+        .then(() => {
+          showAdminMessage(adminBookingMessage, "Status atualizado!", "success");
+          renderBookingsTable();
+        })
+        .catch(res => {
+          showAdminMessage(adminBookingMessage, res.error || "Erro", "error");
+          select.value = previousStatus;
+        })
+        .finally(() => loadingBookingsIndicator.style.display = "none");
+    }
+
+    // Motorista
+    function handleDriverAssign(bookingId, select, previousDriverId) {
+      let driverId = select.value === "" ? null : select.value;
+      loadingBookingsIndicator.style.display = "block";
+      patchAssignDriver(bookingId, driverId)
+        .then(() => {
+          showAdminMessage(adminBookingMessage, "Motorista atualizado!", "success");
+          renderBookingsTable();
+        })
+        .catch(res => {
+          showAdminMessage(adminBookingMessage, res.error || "Erro", "error");
+          select.value = previousDriverId || "";
+        })
+        .finally(() => loadingBookingsIndicator.style.display = "none");
+    }
+
+    function handleDeleteBooking(bookingId) {
+      if (!confirm(`Tem certeza que deseja excluir a reserva ID ${bookingId}?`))
+        return;
+      loadingBookingsIndicator.style.display = "block";
+      deleteBooking(bookingId)
+        .then(() => {
+          showAdminMessage(adminBookingMessage, `Reserva ID ${bookingId} excluída.`, "success");
+          renderBookingsTable();
+        })
+        .catch(res => {
+          showAdminMessage(adminBookingMessage, res.error || "Erro ao excluir", "error");
+        })
+        .finally(() => loadingBookingsIndicator.style.display = "none");
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderBookingsTable();
+    });
+  </script>
+</body>
+</html>
