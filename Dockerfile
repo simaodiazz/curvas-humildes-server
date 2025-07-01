@@ -23,4 +23,4 @@ EXPOSE 5000
 
 HEALTHCHECK NONE
 
-ENTRYPOINT ["gunicorn", "-w", "37", "-b", "0.0.0.0:5000", "app:create_app(config_object_name=\"config\")"]
+ENTRYPOINT ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "app:create_app(config_object_name=\"config\")"]
