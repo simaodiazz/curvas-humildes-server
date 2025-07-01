@@ -5,6 +5,7 @@ from ..db import Model as Base
 
 class Voucher(Base):
     __tablename__ = "vouchers"
+    
     id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String(50), nullable=False, unique=True, index=True)
     description = Column(String(255), nullable=True)

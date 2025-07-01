@@ -21,17 +21,6 @@ def create_app(config_object_name="config"):
     """
     App factory: cria e configura a instância da aplicação Flask.
     """
-
-    app.config.from_object(config_object_name)
-
-    if not os.path.exists(app.instance_path):
-        try:
-            os.makedirs(app.instance_path)
-        except OSError:
-            logging.getLogger(__name__).error(
-                f"Não foi possível criar a pasta instance em {app.instance_path}"
-            )
-
     app.config.from_object("config.Development")
 
     if not app.debug and not app.testing:

@@ -9,7 +9,7 @@ class Configuration:
         "uma_chave_secreta_default_para_desenvolvimento_muito_longa_e_aleatoria"
     )
 
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "mysql+pymysql://root:password@localhost:3306/db")
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "mysql+pymysql://root:simaopks009@localhost:3306/db")
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -67,7 +67,7 @@ class Configuration:
     CACHE_DEFAULT_TIMEOUT = int(os.environ.get("CACHE_DEFAULT_TIMEOUT", 300))
 
     HOST = os.environ.get("HOST", "0.0.0.0")
-    PORT = int(os.environ.get("PORT", 5000))
+    PORT = int(os.environ.get("PORT", 5002))
 
     JWT_TOKEN_LOCATION = os.environ.get("JWT_TOKEN_LOCATION", "cookies")
     JWT_ACCESS_COOKIE_NAME = os.environ.get("JWT_ACCESS_COOKIE_NAME", "access_token")
