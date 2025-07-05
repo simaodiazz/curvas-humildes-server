@@ -14,21 +14,11 @@ logger = getLogger(__name__)
 
 @pages_blueprint.route("/reserve", methods=["GET"])
 def reserve_page():
-    """
-    Se o usuário já estiver autenticado, redireciona para /dashboard,
-    que por sua vez redireciona para o painel correto.
-    Senão, exibe o login normalmente.
-    """
     return render_template("reserve.html")
 
 
 @pages_blueprint.route("/login", methods=["GET"])
 def login_page():
-    """
-    Se o usuário já estiver autenticado, redireciona para /dashboard,
-    que por sua vez redireciona para o painel correto.
-    Senão, exibe o login normalmente.
-    """
     try:
         verify_jwt_in_request()
         return redirect(url_for("pages.painel_dashboard"))
@@ -39,9 +29,6 @@ def login_page():
 @pages_blueprint.route("/dashboard")
 @jwt_required()
 def painel_dashboard():
-    """
-    Redireciona conforme o papel do usuário.
-    """
     role = get_role()
     if role == "admin":
         return redirect(url_for("pages.painel_admin"))
@@ -55,9 +42,6 @@ def painel_dashboard():
 @pages_blueprint.route("/dashboard/client")
 @jwt_required()
 def painel_client():
-    """
-    Painel apenas para user.
-    """
     role = get_role()
     if role == "user":
         return render_template("client.html")
@@ -67,9 +51,6 @@ def painel_client():
 @pages_blueprint.route("/dashboard/partner")
 @jwt_required()
 def painel_partner():
-    """
-    Painel apenas para parceiro.
-    """
     role = get_role()
     if role == "partner" or role == "admin":
         return render_template("partner.html")
@@ -84,21 +65,15 @@ def pagina_register():
 @pages_blueprint.route("/dashboard/admin")
 @jwt_required()
 def painel_admin():
-    """
-    Painel apenas para admin.
-    """
     role = get_role()
     if role == "admin":
-        return render_template("admin/main.html")
+        return render_template("admin/index.html")
     return jsonify({"error": "Acesso negado."}), 403
 
 
 @pages_blueprint.route("/dashboard/admin/bookings")
 @jwt_required()
 def admin_bookings():
-    """
-    Painel apenas para admin.
-    """
     role = get_role()
     if role == "admin":
         return render_template("admin/bookings.html")
@@ -108,9 +83,6 @@ def admin_bookings():
 @pages_blueprint.route("/dashboard/admin/drivers")
 @jwt_required()
 def admin_drivers():
-    """
-    Painel apenas para admin.
-    """
     role = get_role()
     if role == "admin":
         return render_template("admin/drivers.html")
@@ -120,9 +92,6 @@ def admin_drivers():
 @pages_blueprint.route("/dashboard/admin/vehicles")
 @jwt_required()
 def admin_vehicles():
-    """
-    Painel apenas para admin.
-    """
     role = get_role()
     if role == "admin":
         return render_template("admin/vehicles.html")
@@ -132,9 +101,6 @@ def admin_vehicles():
 @pages_blueprint.route("/dashboard/admin/tariffs")
 @jwt_required()
 def admin_tariffs():
-    """
-    Painel apenas para admin.
-    """
     role = get_role()
     if role == "admin":
         return render_template("admin/tariffs.html")
@@ -164,14 +130,3 @@ def admin_users():
         return render_template("admin/users.html")
     return jsonify({"error": "Acesso negado."}), 403
 
-
-@pages_blueprint.route("/dashboard/admin/metas")
-@jwt_required()
-def admin_metas():
-    """
-    Painel apenas para admin.
-    """
-    role = get_role()
-    if role == "admin":
-        return render_template("admin/metas.html")
-    return jsonify({"error": "Acesso negado."}), 403

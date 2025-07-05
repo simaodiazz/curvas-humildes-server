@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
-  <!-- Header fake -->
   <header class="bg-white shadow-sm py-3 px-8 flex justify-between items-center">
     <button onclick="history.back()"
       class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 shadow transition">
@@ -25,7 +24,6 @@
     <div></div>
   </header>
   <main class="flex-1 w-full max-w-7xl mx-auto px-4 py-10">
-    <!-- Gestão de Frota (Veículos) -->
     <section class="bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 rounded-2xl shadow-xl p-8 mb-8">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
         <div></div>
@@ -35,10 +33,10 @@
         </button>
       </div>
       <div id="adminVehicleMessage" class="hidden text-center mb-3 px-4 py-2 border border-indigo-100 bg-indigo-50 text-indigo-900 rounded shadow text-sm"></div>
-      <form id="addVehicleForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white bg-opacity-80 p-4 rounded-xl shadow mb-6">
-        <input type="text" id="newVehicleLicensePlate" name="license_plate" placeholder="Matrícula" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
-        <input type="text" id="newVehicleMake" name="make" placeholder="Marca" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
-        <input type="text" id="newVehicleModel" name="model" placeholder="Modelo" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
+      <form id="addVehicleForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white bg-opacity-80 p-4 rounded-xl shadow mb-6" autocomplete="off">
+        <input type="text" id="newVehicleLicensePlate" name="license_plate" placeholder="Matrícula" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm" maxlength="12">
+        <input type="text" id="newVehicleMake" name="make" placeholder="Marca" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm" maxlength="30">
+        <input type="text" id="newVehicleModel" name="model" placeholder="Modelo" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm" maxlength="30">
         <input type="number" id="newVehicleYear" name="year" placeholder="Ano" min="1980" max="2099" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
         <input type="number" id="newVehicleCapacityPassengers" name="capacity_passengers" placeholder="Capac. Passageiros" min="1" value="4" required class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
         <input type="number" id="newVehicleCapacityBags" name="capacity_bags" placeholder="Capac. Malas" min="0" value="3" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white shadow-inner transition text-sm">
@@ -80,8 +78,7 @@
 <script>
 const VEHICLES_API_BASE = "/admin/vehicles";
 const vehicleToken = localStorage.getItem('access_token');
-
-// Mensagem informativa/erro
+let messageTimeout = null;
 function showVehicleMsg(msg, type = "info") {
   const el = document.getElementById("adminVehicleMessage");
   el.textContent = msg;
@@ -91,23 +88,25 @@ function showVehicleMsg(msg, type = "info") {
   } else {
     el.classList.remove("text-red-700", "border-red-200", "bg-red-50");
   }
-  setTimeout(() => el.classList.add("hidden"), 4000);
+  if (messageTimeout) clearTimeout(messageTimeout);
+  messageTimeout = setTimeout(() => el.classList.add("hidden"), 4000);
 }
-// Spinner
 function showVehicleLoading(on) {
   document.getElementById("loadingVehiclesIndicator").classList.toggle("hidden", !on);
 }
-
-// GET lista
 function refreshVehiclesTable() {
   showVehicleLoading(true);
   fetch(VEHICLES_API_BASE, {
     method: "GET",
     headers: { Authorization: "Bearer " + vehicleToken }
-  }).then(r => r.json().then(j => ({status: r.status, body: j})))
-    .then(({status, body}) => {
+  }).then(r => {
+    if (r.status === 204) return [];
+    return r.json().then(j => {
+      if (r.status !== 200) throw new Error(j.error || "Erro ao carregar");
+      return j;
+    });
+  }).then(body => {
       showVehicleLoading(false);
-      if (status !== 200) throw new Error(body.error || "Erro ao carregar");
       const tbody = document.getElementById("vehiclesTableBody");
       tbody.innerHTML = "";
       (body || []).forEach(vehicle => {
@@ -118,10 +117,10 @@ function refreshVehiclesTable() {
     .catch(e => {
       showVehicleLoading(false);
       showVehicleMsg(e.message, "error");
+      document.getElementById("vehiclesTableBody").innerHTML = "";
       document.getElementById("noVehiclesMessage").classList.remove("hidden");
     });
 }
-// HTML de linha/tabela
 function vehicleRow(vehicle) {
   const tr = document.createElement("tr");
   let options = [
@@ -151,8 +150,6 @@ function vehicleRow(vehicle) {
   `;
   return tr;
 }
-
-// ADD Vehicle
 document.getElementById("addVehicleForm").addEventListener("submit", function(e){
   e.preventDefault();
   const form = e.target;
@@ -174,10 +171,12 @@ document.getElementById("addVehicleForm").addEventListener("submit", function(e)
     },
     body: JSON.stringify(data)
   })
-    .then(r => r.json().then(j => ({status:r.status, body: j})))
-    .then(({status, body}) => {
+    .then(r => {
+      if(r.status === 201) return r.json();
+      return r.json().then(j => { throw new Error(j.error || "Erro ao adicionar veículo") });
+    })
+    .then(() => {
       showVehicleLoading(false);
-      if(status !== 201) throw new Error(body.error || "Erro ao adicionar veículo");
       showVehicleMsg("Veículo adicionado com sucesso.");
       form.reset();
       refreshVehiclesTable();
@@ -187,13 +186,8 @@ document.getElementById("addVehicleForm").addEventListener("submit", function(e)
       showVehicleMsg(e.message, "error");
     });
 });
-
-// REFRESH Btn
 document.getElementById("refreshVehiclesBtn").addEventListener("click", refreshVehiclesTable);
-
-// Remover veículo & status update delegação:
 document.getElementById("vehiclesTableBody").addEventListener("click", function(e){
-  // Apagar
   if (e.target.classList.contains("deleteVehicleBtn")) {
     const id = e.target.dataset.id;
     if (!confirm(`Remover veículo ID ${id}?`)) return;
@@ -201,23 +195,20 @@ document.getElementById("vehiclesTableBody").addEventListener("click", function(
     fetch(`${VEHICLES_API_BASE}/${id}`, {
       method: "DELETE",
       headers: { Authorization: "Bearer " + vehicleToken }
-    })
-      .then(r => {
+    }).then(r => {
+      if(r.status === 204){
         showVehicleLoading(false);
-        if(r.status === 204){
-          showVehicleMsg("Veículo removido.");
-          refreshVehiclesTable();
-        }
-        else return r.json().then(b => { throw new Error(b.error || "Erro ao remover veículo") });
-      })
-      .catch(e => {
-        showVehicleLoading(false);
-        showVehicleMsg(e.message, "error");
-      });
+        showVehicleMsg("Veículo removido.");
+        refreshVehiclesTable();
+        return;
+      }
+      return r.json().then(b => { throw new Error(b.error || "Erro ao remover veículo") });
+    }).catch(e => {
+      showVehicleLoading(false);
+      showVehicleMsg(e.message, "error");
+    });
   }
 });
-
-// PATCH status
 document.getElementById("vehiclesTableBody").addEventListener("change", function(e){
   if (e.target.classList.contains("vehicleStatusDropdown")) {
     const id = e.target.dataset.id;
@@ -230,10 +221,12 @@ document.getElementById("vehiclesTableBody").addEventListener("change", function
         "Content-Type": "application/json"
       },
       body: JSON.stringify({status})
-    }).then(r => r.json().then(b => ({status:r.status, body:b})))
-      .then(({status, body}) => {
+    }).then(r => {
+      if(r.status === 200) return r.json();
+      return r.json().then(b => { throw new Error(b.error || "Erro ao atualizar status"); });
+    })
+      .then(() => {
         showVehicleLoading(false);
-        if (status !== 200) throw new Error(body.error || "Erro ao atualizar status");
         showVehicleMsg("Estado atualizado.");
         refreshVehiclesTable();
       })
@@ -244,8 +237,6 @@ document.getElementById("vehiclesTableBody").addEventListener("change", function
       });
   }
 });
-
-// Inicializa
 window.addEventListener("DOMContentLoaded", refreshVehiclesTable);
 </script>
 </body>

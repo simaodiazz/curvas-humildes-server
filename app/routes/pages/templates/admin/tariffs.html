@@ -39,7 +39,7 @@
       <div id="loadingTariffsIndicator" class="hidden flex justify-center py-4">
         <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
       </div>
-    <form id="updateTariffForm" class="flex flex-col gap-8 bg-white bg-opacity-90 p-6 rounded-2xl shadow-lg ring-1 ring-indigo-100">
+      <form id="updateTariffForm" class="flex flex-col gap-8 bg-white bg-opacity-90 p-6 rounded-2xl shadow-lg ring-1 ring-indigo-100">
 
         <!-- Preços base -->
         <fieldset class="grid grid-cols-1 md:grid-cols-2 gap-7 border-b pb-7">
@@ -111,42 +111,66 @@
             <span class="text-xs text-gray-500 ml-2 mt-3">Última atualização: <span id="tariffsUpdatedAt">N/A</span></span>
             </div>
         </fieldset>
-    </form>
+      </form>
+    </section>
   </main>
 <script>
 const TARIFFS_API = "/admin/settings/tariffs";
 const tariffToken = localStorage.getItem('access_token');
 
+// Controle único para timeout da mensagem
+let tariffMsgTimeout = null;
 function showTariffMsg(msg, type="info") {
   const el = document.getElementById("adminTariffMessage");
   el.textContent = msg;
-  el.classList.remove("hidden", "text-red-700", "border-red-200", "bg-red-50");
+  el.className = "text-center mb-3 px-4 py-2 border rounded shadow text-sm";
   if(type === "error")
     el.classList.add("text-red-700", "border-red-200", "bg-red-50");
   else
-    el.classList.remove("text-red-700", "border-red-200", "bg-red-50");
-  setTimeout(() => el.classList.add("hidden"), 3500);
+    el.classList.add("text-indigo-900", "border-indigo-100", "bg-indigo-50");
+  el.classList.remove("hidden");
+  if (tariffMsgTimeout) clearTimeout(tariffMsgTimeout);
+  tariffMsgTimeout = setTimeout(() => el.classList.add("hidden"), 3500);
 }
 
+// Único "flag" para controlar carga simultânea
+let loadingTariffs = false;
 function showTariffLoading(show) {
+  loadingTariffs = !!show;
   document.getElementById("loadingTariffsIndicator").classList.toggle("hidden", !show);
 }
 
-function fillTariffForm(data) {
-  document.getElementById("base_rate_eur").value = data.base_rate_eur ?? "";
-  document.getElementById("rate_per_km_eur").value = data.rate_per_km_eur ?? "";
-  document.getElementById("rate_per_passenger_eur").value = data.rate_per_passenger_eur ?? "";
-  document.getElementById("rate_per_bag_eur").value = data.rate_per_bag_eur ?? "";
-  document.getElementById("night_surcharge_applies").checked = !!data.night_surcharge_applies;
-  document.getElementById("night_surcharge_percentage").value = data.night_surcharge_percentage ?? "";
-  document.getElementById("night_surcharge_start_hour").value = data.night_surcharge_start_hour ?? "";
-  document.getElementById("night_surcharge_end_hour").value = data.night_surcharge_end_hour ?? "";
-  document.getElementById("booking_slot_overlap_minutes").value = data.booking_slot_overlap_minutes ?? "";
-  document.getElementById("tariffsUpdatedAt").textContent = data.updated_at 
-    ? new Date(data.updated_at).toLocaleString("pt-PT") : "N/A";
+// Limpa todos os campos do formulário visualmente
+function clearTariffForm() {
+  ["base_rate_eur","rate_per_km_eur","rate_per_passenger_eur","rate_per_bag_eur",
+   "night_surcharge_applies","night_surcharge_percentage",
+   "night_surcharge_start_hour","night_surcharge_end_hour",
+   "booking_slot_overlap_minutes"].forEach(id=>{
+     const el = document.getElementById(id);
+     if(el.type === "checkbox") el.checked = false; else el.value = "";
+   });
+  document.getElementById("tariffsUpdatedAt").textContent = "N/A";
   toggleNightFields();
 }
 
+// Coloca valores do fetch em cada campo, bloqueando/desbloqueando night fields corretamente
+function fillTariffForm(data) {
+  document.getElementById("base_rate_eur").value = (data.base_rate_eur ?? "");
+  document.getElementById("rate_per_km_eur").value = (data.rate_per_km_eur ?? "");
+  document.getElementById("rate_per_passenger_eur").value = (data.rate_per_passenger_eur ?? "");
+  document.getElementById("rate_per_bag_eur").value = (data.rate_per_bag_eur ?? "");
+  document.getElementById("night_surcharge_applies").checked = !!data.night_surcharge_applies;
+  document.getElementById("night_surcharge_percentage").value = (data.night_surcharge_percentage ?? "");
+  document.getElementById("night_surcharge_start_hour").value = (data.night_surcharge_start_hour ?? "");
+  document.getElementById("night_surcharge_end_hour").value = (data.night_surcharge_end_hour ?? "");
+  document.getElementById("booking_slot_overlap_minutes").value = (data.booking_slot_overlap_minutes ?? "");
+  document.getElementById("tariffsUpdatedAt").textContent = data.updated_at
+    ? new Date(data.updated_at).toLocaleString("pt-PT")
+    : "N/A";
+  toggleNightFields();
+}
+
+// Ativa/desativa os campos da sobretaxa noturna com cor visual clara
 function toggleNightFields() {
   const enabled = document.getElementById("night_surcharge_applies").checked;
   [
@@ -154,80 +178,93 @@ function toggleNightFields() {
     "night_surcharge_start_hour",
     "night_surcharge_end_hour"
   ].forEach(id => {
-    let el = document.getElementById(id);
+    const el = document.getElementById(id);
     el.disabled = !enabled;
-    if(enabled){ el.classList.remove("text-gray-400"); }
-    else { el.classList.add("text-gray-400"); }
+    // Mudança visual notória
+    if (enabled) {
+      el.classList.remove("bg-gray-100","text-gray-400");
+      el.classList.add("bg-white");
+    } else {
+      el.value = "";
+      el.classList.remove("bg-white");
+      el.classList.add("bg-gray-100","text-gray-400");
+    }
   });
 }
 
-function loadTariffs() {
+// AJAX: carregar tarifas
+async function loadTariffs() {
+  if (loadingTariffs) return; // previne duplo load
   showTariffLoading(true);
-  fetch(TARIFFS_API, {
-    method: "GET",
-    headers: { Authorization: "Bearer " + tariffToken }
-  }).then(r => r.json().then(j => ({status:r.status, body:j})))
-    .then(({status, body}) => {
-      showTariffLoading(false);
-      if(status !== 200) throw new Error(body.error || "Erro ao carregar tarifas");
-      fillTariffForm(body);
-    })
-    .catch(e => {
-      showTariffLoading(false);
-      showTariffMsg(e.message, "error");
-      fillTariffForm({});
+  try {
+    const r = await fetch(TARIFFS_API, {
+      method: "GET",
+      headers: { Authorization: "Bearer " + tariffToken }
     });
+    let body = null;
+    try { body = await r.json(); } catch { body = {}; }
+    showTariffLoading(false);
+    if (r.status !== 200) throw new Error(body.error || "Erro ao carregar tarifas");
+    fillTariffForm(body);
+  } catch(e) {
+    showTariffLoading(false);
+    showTariffMsg(e.message, "error");
+    clearTariffForm();
+  }
 }
 
 // REFRESH Button
-document.getElementById("refreshTariffsBtn").addEventListener("click", function(){ loadTariffs(); });
+document.getElementById("refreshTariffsBtn").addEventListener("click", loadTariffs);
 
 // Night Surcharge Enable/Disable
 document.getElementById("night_surcharge_applies").addEventListener("change", toggleNightFields);
 
-// UPDATE/PATCH tarifas
-document.getElementById("updateTariffForm").addEventListener("submit", function(e){
+// UPDATE tarifas
+document.getElementById("updateTariffForm").addEventListener("submit", async function(e) {
   e.preventDefault();
+  if (loadingTariffs) return;
   // Coleta campos
+  const nightEnabled = !!document.getElementById("night_surcharge_applies").checked;
   const data = {
-    base_rate_eur: parseFloat(document.getElementById("base_rate_eur").value || 0),
-    rate_per_km_eur: parseFloat(document.getElementById("rate_per_km_eur").value || 0),
-    rate_per_passenger_eur: parseFloat(document.getElementById("rate_per_passenger_eur").value || 0),
-    rate_per_bag_eur: parseFloat(document.getElementById("rate_per_bag_eur").value || 0),
-    night_surcharge_applies: document.getElementById("night_surcharge_applies").checked,
-    night_surcharge_percentage: document.getElementById("night_surcharge_applies").checked
-      ? parseFloat(document.getElementById("night_surcharge_percentage").value || 0)
+    base_rate_eur: document.getElementById("base_rate_eur").value === "" ? null : parseFloat(document.getElementById("base_rate_eur").value),
+    rate_per_km_eur: document.getElementById("rate_per_km_eur").value === "" ? null : parseFloat(document.getElementById("rate_per_km_eur").value),
+    rate_per_passenger_eur: document.getElementById("rate_per_passenger_eur").value === "" ? null : parseFloat(document.getElementById("rate_per_passenger_eur").value),
+    rate_per_bag_eur: document.getElementById("rate_per_bag_eur").value === "" ? null : parseFloat(document.getElementById("rate_per_bag_eur").value),
+    night_surcharge_applies: nightEnabled,
+    night_surcharge_percentage: nightEnabled && document.getElementById("night_surcharge_percentage").value !== ""
+      ? parseFloat(document.getElementById("night_surcharge_percentage").value)
       : null,
-    night_surcharge_start_hour: document.getElementById("night_surcharge_applies").checked
-      ? parseInt(document.getElementById("night_surcharge_start_hour").value || 0)
+    night_surcharge_start_hour: nightEnabled && document.getElementById("night_surcharge_start_hour").value !== ""
+      ? parseInt(document.getElementById("night_surcharge_start_hour").value)
       : null,
-    night_surcharge_end_hour: document.getElementById("night_surcharge_applies").checked
-      ? parseInt(document.getElementById("night_surcharge_end_hour").value || 0)
+    night_surcharge_end_hour: nightEnabled && document.getElementById("night_surcharge_end_hour").value !== ""
+      ? parseInt(document.getElementById("night_surcharge_end_hour").value)
       : null,
-    booking_slot_overlap_minutes: parseInt(document.getElementById("booking_slot_overlap_minutes").value || 0)
+    booking_slot_overlap_minutes: document.getElementById("booking_slot_overlap_minutes").value === "" ? null : parseInt(document.getElementById("booking_slot_overlap_minutes").value)
   };
   showTariffLoading(true);
-  fetch(TARIFFS_API, {
-    method: "PUT",
-    headers: {
-      "Authorization": "Bearer " + tariffToken,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(data)
-  }).then(r => r.json().then(j => ({status:r.status, body:j})))
-    .then(({status, body}) => {
-      showTariffLoading(false);
-      if(status !== 200) throw new Error(body.error || "Erro ao atualizar tarifas");
-      fillTariffForm(body);
-      showTariffMsg("Definições de tarifas atualizadas com sucesso.");
-    })
-    .catch(e => {
-      showTariffLoading(false);
-      showTariffMsg(e.message, "error");
+  try {
+    const r = await fetch(TARIFFS_API, {
+      method: "PUT",
+      headers: {
+        "Authorization": "Bearer " + tariffToken,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
     });
+    let body = {};
+    try { body = await r.json(); } catch { body = {}; }
+    showTariffLoading(false);
+    if (r.status !== 200) throw new Error(body.error || "Erro ao atualizar tarifas");
+    fillTariffForm(body);
+    showTariffMsg("Definições de tarifas atualizadas com sucesso.");
+  } catch(e) {
+    showTariffLoading(false);
+    showTariffMsg(e.message, "error");
+  }
 });
 
-// Inicializa ao arrancar
+// Inicialização segura
 window.addEventListener("DOMContentLoaded", loadTariffs);
 </script>
 </body>

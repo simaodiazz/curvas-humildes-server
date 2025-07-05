@@ -4,11 +4,9 @@
   <meta charset="UTF-8">
   <title>Gestão de Utilizadores</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
-  <!-- Header idêntico ao do painel -->
   <header class="bg-white shadow-sm py-3 px-8 flex justify-between items-center">
     <button onclick="window.history.back()"
       class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 shadow transition">
@@ -78,19 +76,24 @@
     </section>
   </main>
   <script>
-    // Configuração: SEU JWT aqui (exemplo: Armazene true token do login do admin)
+    // Token JWT do admin autenticado
     const JWT = localStorage.getItem('jwt') || '';
+    let userMsgTimeout = null;
 
     function showUserMessage(msg, type='info') {
       const msgDiv = document.getElementById("adminUserMessage");
       msgDiv.textContent = msg;
-      msgDiv.classList.remove("hidden");
-      msgDiv.classList.remove("border-red-300", "bg-red-50", "text-red-900");
+      msgDiv.className = "text-center mb-3 px-4 py-2 border rounded shadow text-sm";
       if(type === 'error') {
-        msgDiv.classList.add("border-red-300", "bg-red-50", "text-red-900");
+        msgDiv.classList.add("bg-red-50","text-red-900","border-red-300");
+      } else {
+        msgDiv.classList.add("bg-indigo-50","text-indigo-900","border-indigo-100");
       }
-      setTimeout(() => msgDiv.classList.add("hidden"), 3500);
+      msgDiv.classList.remove("hidden");
+      if (userMsgTimeout) clearTimeout(userMsgTimeout);
+      userMsgTimeout = setTimeout(() => msgDiv.classList.add("hidden"), 3500);
     }
+
     function showLoading(show=true) {
       document.getElementById("loadingUsersIndicator").classList.toggle("hidden", !show);
     }
@@ -100,39 +103,41 @@
       document.getElementById("noUsersMessage").classList.add("hidden");
       const tbody = document.getElementById("usersTableBody");
       tbody.innerHTML = "";
-      let data = [];
       try {
         const res = await fetch("/admin/users", {
           headers: { Authorization: "Bearer " + JWT }
         });
-        data = await res.json();
-        if(res.status !== 200) throw new Error(data.error || "Erro ao carregar utilizadores");
-      } catch (e) {
-        showUserMessage(e.message, 'error');
+        const data = await res.json();
         showLoading(false);
-        return;
-      }
-      showLoading(false);
-      if (data.length === 0) {
+        if(res.status !== 200) throw new Error(data.error || "Erro ao carregar utilizadores");
+        if (!Array.isArray(data) || data.length === 0) {
+          document.getElementById("noUsersMessage").classList.remove("hidden");
+          return;
+        }
+        data.forEach(user => tbody.appendChild(createUserRow(user)));
+      } catch (e) {
+        showLoading(false);
+        document.getElementById("usersTableBody").innerHTML = "";
         document.getElementById("noUsersMessage").classList.remove("hidden");
-        return;
+        showUserMessage(e.message, 'error');
       }
-      data.forEach(user => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="p-3">${user.id}</td>
-          <td class="p-3">${user.name}</td>
-          <td class="p-3">${user.email || ''}</td>
-          <td class="p-3">${user.phone_number || ''}</td>
-          <td class="p-3 capitalize">${user.role || ''}</td>
-          <td class="p-3">${user.created_at ? (user.created_at.split('T')[0]) : ''}</td>
-          <td class="p-3 flex gap-2">
-            <button onclick="deleteUser(${user.id})" class="px-3 py-1 text-xs text-white bg-red-500 hover:bg-red-700 rounded shadow">Remover</button>
-            <button onclick="resetUserPassword(${user.id})" class="px-3 py-1 text-xs text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded shadow">Reset PW</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+    }
+
+    function createUserRow(user) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="p-3">${user.id}</td>
+        <td class="p-3">${user.name}</td>
+        <td class="p-3">${user.email || ''}</td>
+        <td class="p-3">${user.phone_number || ''}</td>
+        <td class="p-3 capitalize">${user.role || ''}</td>
+        <td class="p-3">${user.created_at ? (user.created_at.split('T')[0]) : ''}</td>
+        <td class="p-3 flex gap-2">
+          <button type="button" class="deleteUserBtn px-3 py-1 text-xs text-white bg-red-500 hover:bg-red-700 rounded shadow" data-id="${user.id}">Remover</button>
+          <button type="button" class="resetUserPwBtn px-3 py-1 text-xs text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded shadow" data-id="${user.id}">Reset PW</button>
+        </td>
+      `;
+      return tr;
     }
 
     document.getElementById("refreshUsersBtn").onclick = loadUsers;
@@ -147,6 +152,7 @@
         password: form.password.value,
         role: form.role.value
       };
+      showLoading(true);
       try {
         const res = await fetch("/admin/users", {
           method: "POST",
@@ -157,60 +163,76 @@
           body: JSON.stringify(userData)
         });
         const data = await res.json();
+        showLoading(false);
         if(res.status !== 201) {
           showUserMessage(data.error || "Erro ao adicionar", 'error');
           return;
         }
         showUserMessage("Utilizador adicionado com sucesso", "info");
         form.reset();
-        setTimeout(loadUsers, 400);
+        loadUsers();
       } catch (e) {
+        showLoading(false);
         showUserMessage("Erro de comunicação: " + e.message, "error");
       }
     };
 
-    async function deleteUser(id) {
-      if(!confirm("Tem a certeza que deseja remover este utilizador?")) return;
-      try {
-        const res = await fetch("/admin/users/"+id, {
-          method: "DELETE",
-          headers: { Authorization: "Bearer " + JWT }
-        });
-        const resp = await res.json();
-        if(res.status !== 200)
-          showUserMessage(resp.error || "Erro ao remover", 'error');
-        else
-          showUserMessage("Utilizador removido!", 'info');
-        loadUsers();
-      } catch (e) { showUserMessage("Erro ao remover: "+e.message, 'error'); }
-    }
-
-    async function resetUserPassword(id) {
-      const newPassword = prompt("Nova palavra-passe (mín 6 chars):");
-      if(!newPassword || newPassword.length < 6) {
-        showUserMessage("Palavra-passe inválida.", "error");
-        return;
+    // Event delegation para ações da tabela (Remover e Reset PW)
+    document.getElementById("usersTableBody").addEventListener("click", async function(e){
+      const target = e.target;
+      const id = target.dataset.id;
+      if (target.classList.contains("deleteUserBtn")) {
+        if(!confirm("Tem a certeza que deseja remover este utilizador?")) return;
+        showLoading(true);
+        try {
+          const res = await fetch("/admin/users/"+id, {
+            method: "DELETE",
+            headers: { Authorization: "Bearer " + JWT }
+          });
+          let msg = "Utilizador removido!";
+          if(res.status !== 200) {
+            const resp = await res.json();
+            msg = resp.error || "Erro ao remover";
+            showUserMessage(msg, 'error');
+          } else {
+            showUserMessage(msg, 'info');
+          }
+          loadUsers();
+        } catch (e) {
+          showUserMessage("Erro ao remover: "+e.message, 'error');
+        } finally {
+          showLoading(false);
+        }
       }
-      try {
-        const res = await fetch(`/admin/users/${id}/password`, {
-          method: "PUT",
-          headers: {
-            Authorization: "Bearer "+JWT,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ new_password: newPassword })
-        });
-        const resp = await res.json();
-        if(res.status !== 200)
-          showUserMessage(resp.error || "Erro no reset.", 'error');
-        else
-          showUserMessage("Palavra-passe redefinida!", 'info');
-      } catch(e) {
-        showUserMessage("Erro ao redefinir password: " + e.message, 'error');
+      if (target.classList.contains("resetUserPwBtn")) {
+        const newPassword = prompt("Nova palavra-passe (mín 6 chars):");
+        if(!newPassword || newPassword.length < 6) {
+          showUserMessage("Palavra-passe inválida.", "error");
+          return;
+        }
+        showLoading(true);
+        try {
+          const res = await fetch(`/admin/users/${id}/password`, {
+            method: "PUT",
+            headers: {
+              Authorization: "Bearer "+JWT,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ new_password: newPassword })
+          });
+          const resp = await res.json();
+          if(res.status !== 200)
+            showUserMessage(resp.error || "Erro no reset.", 'error');
+          else
+            showUserMessage("Palavra-passe redefinida!", 'info');
+        } catch(e) {
+          showUserMessage("Erro ao redefinir password: " + e.message, 'error');
+        } finally {
+          showLoading(false);
+        }
       }
-    }
+    });
 
-    // Inicialização automática
     loadUsers();
   </script>
 </body>

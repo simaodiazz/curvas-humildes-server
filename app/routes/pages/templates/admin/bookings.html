@@ -70,7 +70,6 @@
   </main>
   <script>
     const API_BASE_URL = "";
-
     let ADMIN_JWT = localStorage.getItem("admin_jwt_token") || "";
 
     let activeDriversList = [];
@@ -88,9 +87,24 @@
     const loadingBookingsIndicator = document.getElementById('loadingBookingsIndicator');
     const noBookingsMessage = document.getElementById('noBookingsMessage');
     const adminBookingMessage = document.getElementById('adminBookingMessage');
+    let bookingMsgTimeout = null;
+    let loadingFlag = false;
+    let currentEditingCell = null;
 
     function goBack() {
       window.location.href = "/dashboard/admin";
+    }
+
+    function showAdminMessage(el, msg, type="info") {
+      el.textContent = msg;
+      el.className = "text-center mb-3 px-4 py-2 border rounded shadow text-sm";
+      if(type === "error")
+        el.classList.add("text-red-700","border-red-200","bg-red-50");
+      else
+        el.classList.add("text-indigo-900","border-indigo-100","bg-indigo-50");
+      el.classList.remove("hidden");
+      if(bookingMsgTimeout) clearTimeout(bookingMsgTimeout);
+      bookingMsgTimeout = setTimeout(()=>el.classList.add("hidden"), 3500);
     }
 
     function formatCurrency(n) {
@@ -117,8 +131,15 @@
     }
 
     async function fetchActiveDrivers() {
-        try { const response = await fetch(`${API_BASE_URL}/admin/drivers?active=true`); if (!response.ok) throw new Error(`Erro ${response.status}`); activeDriversList = await response.json(); }
-        catch (error) { console.error('Erro obter motoristas ativos:', error); showAdminMessage(adminDriverMessage, `Erro obter lista motoristas: ${error.message}`, 'error'); activeDriversList = []; }
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/drivers?active=true`);
+        if (!response.ok) throw new Error(`Erro ${response.status}`);
+        activeDriversList = await response.json();
+      } catch (error) {
+        console.error('Erro obter motoristas ativos:', error);
+        showAdminMessage(adminBookingMessage, `Erro obter lista motoristas: ${error.message}`, 'error');
+        activeDriversList = [];
+      }
     }
 
     async function fetchBookings() {
@@ -172,16 +193,21 @@
       return res;
     }
 
+    function showLoading(show){
+      loadingFlag = !!show;
+      loadingBookingsIndicator.classList.toggle("hidden", !show);
+    }
+
     async function renderBookingsTable() {
+      if(loadingFlag) return;
       bookingsTableBody.innerHTML = '';
-      noBookingsMessage.style.display = "none";
-      loadingBookingsIndicator.style.display = "block";
+      noBookingsMessage.classList.add('hidden');
+      showLoading(true);
       try {
-        if (!activeDriversList.length)
-          await fetchActiveDrivers();
+        if (!activeDriversList.length) await fetchActiveDrivers();
         let bookings = await fetchBookings();
         if (!bookings.length) {
-          noBookingsMessage.style.display = "block";
+          noBookingsMessage.classList.remove('hidden');
           return;
         }
         bookings.forEach((booking) => {
@@ -240,11 +266,10 @@
           actionsCell.appendChild(delBtn);
         });
       } catch (e) {
-        console.error(e);
         showAdminMessage(adminBookingMessage, typeof e === "object" && e.error ? e.error : String(e), "error");
-        noBookingsMessage.style.display = "block";
+        noBookingsMessage.classList.remove('hidden');
       } finally {
-        loadingBookingsIndicator.style.display = "none";
+        showLoading(false);
       }
     }
 
@@ -259,6 +284,13 @@
       cell.style.cursor = "pointer";
 
       cell.ondblclick = () => {
+        if(currentEditingCell && currentEditingCell !== cell){
+          let prev = currentEditingCell;
+          let prevValue = prev.dataset.origValue;
+          prev.textContent = prevValue ?? '';
+        }
+        currentEditingCell = cell;
+        cell.dataset.origValue = value ?? '';
         const input = document.createElement('input');
         input.type = inputType;
         input.value = value ?? '';
@@ -270,7 +302,7 @@
 
         input.addEventListener('keydown', e => {
           if (e.key === 'Enter') trySaveEdit();
-          if (e.key === 'Escape') cell.textContent = value ?? '';
+          if (e.key === 'Escape') cancelEdit();
         });
         input.addEventListener('blur', trySaveEdit);
 
@@ -279,27 +311,31 @@
           if (inputType === "number") {
             newValue = input.value === '' ? null : Number(input.value);
             if (isNaN(newValue)) newValue = null;
-          } else if (inputType === "date") {
-            newValue = input.value;
-          } else if (inputType === "time") {
+          } else if (inputType === "date" || inputType === "time") {
             newValue = input.value;
           } else {
             newValue = input.value.trim();
           }
-          if (newValue !== value) {
+          if (String(newValue) !== String(cell.dataset.origValue)) {
+            showLoading(true);
             patchBookingField(bookingId, field, newValue)
               .then(() => {
-                cell.textContent = newValue ?? '';
                 showAdminMessage(adminBookingMessage, "Campo atualizado!", "success");
                 renderBookingsTable();
               })
               .catch(res => {
                 showAdminMessage(adminBookingMessage, res.error || "Erro ao atualizar", "error");
-                cell.textContent = value ?? '';
-              });
+                cell.textContent = cell.dataset.origValue ?? '';
+                currentEditingCell = null;
+              })
+              .finally(() => showLoading(false));
           } else {
-            cell.textContent = value ?? '';
+            cancelEdit();
           }
+        }
+        function cancelEdit() {
+          cell.textContent = cell.dataset.origValue ?? '';
+          currentEditingCell = null;
         }
       }
     }
@@ -310,7 +346,7 @@
         select.value = previousStatus;
         return;
       }
-      loadingBookingsIndicator.style.display = "block";
+      showLoading(true);
       patchBookingStatus(bookingId, select.value)
         .then(() => {
           showAdminMessage(adminBookingMessage, "Status atualizado!", "success");
@@ -320,13 +356,13 @@
           showAdminMessage(adminBookingMessage, res.error || "Erro", "error");
           select.value = previousStatus;
         })
-        .finally(() => loadingBookingsIndicator.style.display = "none");
+        .finally(() => showLoading(false));
     }
 
     // Motorista
     function handleDriverAssign(bookingId, select, previousDriverId) {
       let driverId = select.value === "" ? null : select.value;
-      loadingBookingsIndicator.style.display = "block";
+      showLoading(true);
       patchAssignDriver(bookingId, driverId)
         .then(() => {
           showAdminMessage(adminBookingMessage, "Motorista atualizado!", "success");
@@ -336,13 +372,13 @@
           showAdminMessage(adminBookingMessage, res.error || "Erro", "error");
           select.value = previousDriverId || "";
         })
-        .finally(() => loadingBookingsIndicator.style.display = "none");
+        .finally(() => showLoading(false));
     }
 
     function handleDeleteBooking(bookingId) {
       if (!confirm(`Tem certeza que deseja excluir a reserva ID ${bookingId}?`))
         return;
-      loadingBookingsIndicator.style.display = "block";
+      showLoading(true);
       deleteBooking(bookingId)
         .then(() => {
           showAdminMessage(adminBookingMessage, `Reserva ID ${bookingId} excluída.`, "success");
@@ -351,12 +387,10 @@
         .catch(res => {
           showAdminMessage(adminBookingMessage, res.error || "Erro ao excluir", "error");
         })
-        .finally(() => loadingBookingsIndicator.style.display = "none");
+        .finally(() => showLoading(false));
     }
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      renderBookingsTable();
-    });
+    document.addEventListener('DOMContentLoaded', renderBookingsTable);
   </script>
 </body>
 </html>

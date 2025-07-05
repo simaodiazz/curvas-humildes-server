@@ -84,167 +84,175 @@
       <div id="noDriversMessage" class="hidden text-center text-gray-400 py-6">Nenhum motorista encontrado.</div>
     </section>
   </main>
-</body>
 <script>
-    const API_BASE = "/admin/drivers";
-    const token = localStorage.getItem('access_token');
+const API_BASE = "/admin/drivers";
+const token = localStorage.getItem('access_token');
+let driverMsgTimeout = null;
+let loadingDrivers = false;
 
-    function showDriverMessage(msg, type="info") {
-    const el = document.getElementById("adminDriverMessage");
-    el.textContent = msg;
-    el.classList.remove("hidden", "text-red-700", "border-red-200", "bg-red-50");
-    if(type === "error") {
-        el.classList.add("text-red-700", "border-red-200", "bg-red-50");
-    } else {
-        el.classList.remove("text-red-700", "border-red-200", "bg-red-50");
-    }
-    setTimeout(() => { el.classList.add("hidden"); }, 3800);
-    }
+function showDriverMessage(msg, type = "info") {
+  const el = document.getElementById("adminDriverMessage");
+  el.textContent = msg;
+  el.className = "text-center mb-3 px-4 py-2 border rounded shadow text-sm";
+  if(type === "error")
+    el.classList.add("bg-red-50", "text-red-700", "border-red-200");
+  else
+    el.classList.add("bg-indigo-50", "text-indigo-900", "border-indigo-100");
+  el.classList.remove("hidden");
+  if (driverMsgTimeout) clearTimeout(driverMsgTimeout);
+  driverMsgTimeout = setTimeout(() => el.classList.add("hidden"), 3500);
+}
 
-    function showLoading(show) {
-    document.getElementById("loadingDriversIndicator").classList.toggle("hidden", !show);
-    }
+function showLoading(show) {
+  loadingDrivers = !!show;
+  document.getElementById("loadingDriversIndicator").classList.toggle("hidden", !show);
+}
 
-    function refreshDriversTable() {
+// Carrega e desenha a tabela de motoristas
+async function refreshDriversTable() {
+  if (loadingDrivers) return;
+  showLoading(true);
+  try {
+    const r = await fetch(API_BASE, {
+      method: "GET",
+      headers: { Authorization: "Bearer " + token }
+    });
+    let body;
+    try { body = await r.json(); } catch { body = []; }
+    showLoading(false);
+    if (r.status !== 200) throw new Error((body && body.error) || "Erro ao carregar");
+
+    const tbody = document.getElementById("driversTableBody");
+    tbody.innerHTML = "";
+    (body || []).forEach(driver => {
+      tbody.appendChild(driverRow(driver));
+    });
+    document.getElementById("noDriversMessage").classList.toggle("hidden", (body||[]).length > 0);
+  } catch(e) {
+    showLoading(false);
+    document.getElementById("driversTableBody").innerHTML = "";
+    showDriverMessage(e.message, "error");
+    document.getElementById("noDriversMessage").classList.remove("hidden");
+  }
+}
+
+function driverRow(driver) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td class="p-2">${driver.id}</td>
+    <td class="p-2">${driver.first_name || ""}</td>
+    <td class="p-2">${driver.last_name || ""}</td>
+    <td class="p-2">${driver.email || ""}</td>
+    <td class="p-2">${driver.phone_number || ""}</td>
+    <td class="p-2">
+      <label class="inline-flex items-center cursor-pointer">
+        <input type="checkbox" ${driver.is_active ? "checked" : ""} class="accent-indigo-600 w-5 h-5 status-toggle" data-id="${driver.id}">
+        <span class="ml-1 text-sm">${driver.is_active ? "Ativo" : "Inativo"}</span>
+      </label>
+    </td>
+    <td class="p-2">${driver.created_at ? new Date(driver.created_at).toLocaleString("pt-PT") : ""}</td>
+    <td class="p-2 flex gap-2">
+      <button class="deleteDriverBtn px-3 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 text-xs font-bold border border-red-200" data-id="${driver.id}">
+        Remover
+      </button>
+    </td>
+  `;
+  return tr;
+}
+
+// ADD DRIVER
+document.getElementById("addDriverForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  if (loadingDrivers) return;
+  const form = e.target;
+  const data = {
+    first_name: form.first_name.value.trim(),
+    last_name: form.last_name.value.trim(),
+    email: form.email.value.trim(),
+    phone_number: form.phone_number.value.trim(),
+    is_active: form.is_active.checked,
+  };
+  showLoading(true);
+  fetch(API_BASE, {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + token,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  })
+  .then(r => r.json().then(j => ({status:r.status, body: j})))
+  .then(({status, body}) => {
+    showLoading(false);
+    if(status !== 201) throw new Error(body.error || "Erro ao adicionar motorista");
+    showDriverMessage("Motorista adicionado com sucesso.");
+    form.reset();
+    refreshDriversTable();
+  })
+  .catch(e => {
+    showLoading(false);
+    showDriverMessage(e.message, "error");
+  });
+});
+
+// REFRESH BUTTON
+document.getElementById("refreshDriversBtn").addEventListener("click", refreshDriversTable);
+
+// Delegação dinâmica para delete/toggle
+document.getElementById("driversTableBody").addEventListener("click", function(e){
+  // Remover motorista
+  if (e.target.classList.contains("deleteDriverBtn")) {
+    const id = e.target.dataset.id;
+    if (!confirm(`Remover motorista ID ${id}?`)) return;
     showLoading(true);
-    fetch(API_BASE, {
-        method: "GET",
-        headers: { Authorization: "Bearer " + token }
+    fetch(`${API_BASE}/${id}`, { 
+      method: "DELETE", 
+      headers: { Authorization: "Bearer " + token } 
     })
-        .then(r => r.json().then(j => ({status: r.status, body: j})))
-        .then(({status, body}) => {
-        showLoading(false);
-        if (status !== 200) throw new Error(body.error || "Erro ao carregar");
-
-        const tbody = document.getElementById("driversTableBody");
-        tbody.innerHTML = "";
-        (body || []).forEach(driver => {
-            tbody.appendChild(driverRow(driver));
-        });
-
-        document.getElementById("noDriversMessage").classList.toggle("hidden", (body||[]).length > 0);
-        })
-        .catch(e => {
-        showLoading(false);
-        showDriverMessage(e.message, "error");
-        document.getElementById("noDriversMessage").classList.remove("hidden");
-        });
-    }
-
-    function driverRow(driver) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-        <td class="p-2">${driver.id}</td>
-        <td class="p-2">${driver.first_name || ""}</td>
-        <td class="p-2">${driver.last_name || ""}</td>
-        <td class="p-2">${driver.email || ""}</td>
-        <td class="p-2">${driver.phone_number || ""}</td>
-        <td class="p-2">
-        <label class="inline-flex items-center cursor-pointer">
-            <input type="checkbox" ${driver.is_active ? "checked" : ""} class="accent-indigo-600 w-5 h-5 status-toggle" data-id="${driver.id}">
-            <span class="ml-1 text-sm">${driver.is_active ? "Ativo" : "Inativo"}</span>
-        </label>
-        </td>
-        <td class="p-2">${driver.created_at ? new Date(driver.created_at).toLocaleString("pt-PT") : ""}</td>
-        <td class="p-2 flex gap-2">
-        <button class="deleteDriverBtn px-3 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 text-xs font-bold border border-red-200" data-id="${driver.id}">
-            Remover
-        </button>
-        </td>
-    `;
-    return tr;
-    }
-
-    // ADD DRIVER
-    document.getElementById("addDriverForm").addEventListener("submit", function(e){
-    e.preventDefault();
-    const form = e.target;
-    const data = {
-        first_name: form.first_name.value.trim(),
-        last_name: form.last_name.value.trim(),
-        email: form.email.value.trim(),
-        phone_number: form.phone_number.value.trim(),
-        is_active: form.is_active.checked,
-    };
-    showLoading(true);
-    fetch(API_BASE, {
-        method: "POST",
-        headers: {
-        "Authorization": "Bearer " + token,
-        "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
-    })
-        .then(r => r.json().then(j => ({status:r.status, body: j})))
-        .then(({status, body}) => {
-        showLoading(false);
-        if(status !== 201) throw new Error(body.error || "Erro ao adicionar motorista");
-        showDriverMessage("Motorista adicionado com sucesso.");
-        form.reset();
+    .then(r => {
+      showLoading(false);
+      if(r.status === 204){
+        showDriverMessage("Motorista removido.");
         refreshDriversTable();
-        })
-        .catch(e => {
-        showLoading(false);
-        showDriverMessage(e.message, "error");
-        });
+      } else {
+        return r.json().then(b => { throw new Error(b.error || "Erro ao remover motorista") });
+      }
+    })
+    .catch(e => {
+      showLoading(false);
+      showDriverMessage(e.message, "error");
     });
-
-    // REFRESH BUTTON
-    document.getElementById("refreshDriversBtn").addEventListener("click", refreshDriversTable);
-
-    // Delegação dinâmico: toggles ativo e apagar
-    document.getElementById("driversTableBody").addEventListener("click", function(e){
-    // Remover motorista
-    if (e.target.classList.contains("deleteDriverBtn")) {
-        const id = e.target.dataset.id;
-        if (!confirm(`Remover motorista ID ${id}?`)) return;
-        showLoading(true);
-        fetch(`${API_BASE}/${id}`, { 
-        method: "DELETE", 
-        headers: { Authorization: "Bearer " + token } 
-        })
-        .then(r => {
-            showLoading(false);
-            if(r.status === 204){ 
-            showDriverMessage("Motorista removido."); 
-            refreshDriversTable();
-            }
-            else return r.json().then(b => { throw new Error(b.error || "Erro ao remover motorista") });
-        })
-        .catch(e => {
-            showLoading(false);
-            showDriverMessage(e.message, "error");
-        });
-    }
-    // Toggle ativo/inativo
-    if (e.target.classList.contains("status-toggle")) {
-        const id = e.target.dataset.id;
-        const is_active = e.target.checked;
-        showLoading(true);
-        fetch(`${API_BASE}/${id}`, {
-        method: "PATCH",
-        headers: {
-            Authorization: "Bearer " + token,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ is_active })
-        })
-        .then(r => r.json().then(b => ({status:r.status, body:b})))
-        .then(({status, body})=>{
-            showLoading(false);
-            if (status !== 200) throw new Error(body.error || "Erro ao atualizar status");
-            showDriverMessage("Estado atualizado.");
-            refreshDriversTable();
-        })
-        .catch(e => {
-            showLoading(false);
-            showDriverMessage(e.message, "error");
-            // se erro no PATCH, tenta repor visual!
-            setTimeout(refreshDriversTable, 800);
-        });
-    }
+  }
+  // Toggle ativo/inativo
+  if (e.target.classList.contains("status-toggle")) {
+    const id = e.target.dataset.id;
+    const is_active = e.target.checked;
+    showLoading(true);
+    fetch(`${API_BASE}/${id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ is_active })
+    })
+    .then(r => r.json().then(b => ({status:r.status, body:b})))
+    .then(({status, body})=>{
+      showLoading(false);
+      if (status !== 200) throw new Error(body.error || "Erro ao atualizar status");
+      showDriverMessage("Estado atualizado.");
+      refreshDriversTable();
+    })
+    .catch(e => {
+      showLoading(false);
+      showDriverMessage(e.message, "error");
+      // se erro no PATCH, tenta repor visual!
+      setTimeout(refreshDriversTable, 800);
     });
+  }
+});
 
-    window.addEventListener("DOMContentLoaded", refreshDriversTable);
+window.addEventListener("DOMContentLoaded", refreshDriversTable);
 </script>
+</body>
 </html>
